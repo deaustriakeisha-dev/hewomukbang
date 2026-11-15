@@ -1,0 +1,2439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MUKBABY — 3D Roblox Mukbang Livestream Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-display: 'Fredoka', 'Inter', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --neon-pink: #ff4fd8;
+      --neon-purple: #8b5cf6;
+      --neon-cyan: #22d3ee;
+      --neon-gold: #fbbf24;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-body);
+      background: #0f0a1e;
+      color: #f8fafc;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    h1, h2, h3, .font-display {
+      font-family: var(--font-display);
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 10, 30, 0.55);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #f472b6, #a855f7);
+      border-radius: 9999px;
+    }
+
+    /* Roblox Chunky Tactile Buttons */
+    .rbx-btn {
+      font-family: var(--font-display);
+      font-weight: 700;
+      border-radius: 1rem;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 0 5px 0 rgba(0, 0, 0, 0.38), 0 8px 18px rgba(168, 85, 247, 0.32);
+      transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s ease, filter 0.15s ease;
+      cursor: pointer;
+    }
+    .rbx-btn:hover {
+      filter: brightness(1.07);
+      transform: translateY(-2px);
+    }
+    .rbx-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4), 0 4px 10px rgba(168, 85, 247, 0.25);
+    }
+
+    /* Neon Stream Frame */
+    .stream-glow {
+      box-shadow:
+        0 0 0 2px rgba(244, 114, 182, 0.45),
+        0 0 28px rgba(236, 72, 153, 0.35),
+        inset 0 0 24px rgba(139, 92, 246, 0.2);
+      transition: box-shadow 0.4s ease;
+    }
+    .stream-glow.hype-max {
+      box-shadow:
+        0 0 0 3px rgba(251, 191, 36, 0.8),
+        0 0 40px rgba(244, 114, 182, 0.65),
+        inset 0 0 30px rgba(34, 211, 238, 0.3);
+    }
+
+    /* Loading Screen Animations */
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-16px) rotate(8deg); }
+    }
+    @keyframes bounceMascot {
+      0%, 100% { transform: translateY(0px) scale(1, 1); }
+      40% { transform: translateY(-18px) scale(1.06, 0.94); }
+      70% { transform: translateY(0px) scale(0.95, 1.05); }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.7; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.05); }
+    }
+    @keyframes shakeScreen {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-6px, 4px); }
+      40% { transform: translate(6px, -4px); }
+      60% { transform: translate(-4px, -3px); }
+      80% { transform: translate(4px, 3px); }
+    }
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.85) translateY(12px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .float-item {
+      animation: floatSlow 3.6s ease-in-out infinite;
+    }
+    .mascot-bounce {
+      animation: bounceMascot 0.75s ease-in-out infinite;
+    }
+    .screen-shake {
+      animation: shakeScreen 0.35s ease-in-out;
+    }
+    .pop-in {
+      animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    /* Hot Dog Progress Bar */
+    .hotdog-track {
+      background: linear-gradient(90deg, #fde68a 0%, #f59e0b 50%, #fde68a 100%);
+      border: 3px solid #92400e;
+      box-shadow: inset 0 4px 8px rgba(120, 53, 15, 0.35);
+    }
+    .hotdog-sausage {
+      background: linear-gradient(180deg, #fb7185 0%, #e11d48 55%, #9f1239 100%);
+      box-shadow: inset 0 3px 5px rgba(255, 255, 255, 0.35);
+      transition: width 0.2s ease-out;
+    }
+    .hotdog-mustard {
+      background-image: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 10px,
+        #facc15 10px,
+        #facc15 18px
+      );
+    }
+
+    /* Delivery Banner Ticker */
+    @keyframes tickerSlide {
+      0% { transform: translateX(0%); }
+      100% { transform: translateX(-50%); }
+    }
+    .ticker-track {
+      display: flex;
+      width: max-content;
+      animation: tickerSlide 24s linear infinite;
+    }
+
+    /* 3D Canvas Container */
+    #threeContainer {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      min-height: 300px;
+      max-height: 490px;
+      border-radius: 1.25rem;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 30%, #2e1065, #090617);
+    }
+    #threeContainer canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+    #threeContainer canvas:active {
+      cursor: grabbing;
+    }
+  </style>
+</head>
+<body class="selection:bg-pink-500 selection:text-white">
+
+  <!-- ==================== INTRO & CUTE LOADING SCREEN ==================== -->
+  <div id="loadingScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center p-5 bg-gradient-to-br from-pink-200 via-purple-200 to-indigo-300 text-slate-900 overflow-hidden">
+    <!-- Floating Decorative Donuts, Boba & Hearts -->
+    <div class="pointer-events-none absolute inset-0 overflow-hidden">
+      <div class="float-item absolute top-10 left-[8%] text-5xl sm:text-6xl drop-shadow">🍩</div>
+      <div class="float-item absolute top-20 right-[10%] text-5xl sm:text-6xl drop-shadow" style="animation-delay: 0.7s;">🧋</div>
+      <div class="float-item absolute bottom-16 left-[12%] text-5xl sm:text-6xl drop-shadow" style="animation-delay: 1.2s;">💖</div>
+      <div class="float-item absolute bottom-24 right-[14%] text-5xl sm:text-6xl drop-shadow" style="animation-delay: 1.8s;">✨</div>
+      <div class="float-item absolute top-1/3 left-[22%] text-4xl drop-shadow" style="animation-delay: 0.4s;">🍡</div>
+      <div class="float-item absolute top-1/2 right-[24%] text-4xl drop-shadow" style="animation-delay: 1.5s;">🌸</div>
+    </div>
+
+    <div class="relative z-10 max-w-lg w-full rounded-3xl bg-white/80 backdrop-blur-xl border-4 border-pink-400 shadow-2xl p-6 sm:p-8 text-center">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-pink-500/15 border border-pink-400/50 text-pink-700 font-bold text-xs uppercase tracking-wider mb-3">
+        <span>🎮 3D Roblox Mukbang Edition</span>
+      </div>
+      <h1 class="font-display text-4xl sm:text-5xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent tracking-tight">
+        MUKBABY
+      </h1>
+      <p class="text-sm sm:text-base text-slate-600 font-medium mt-1">
+        Ultimate Livestream Feast, PBB Chat Wars & Mini-Games
+      </p>
+
+      <!-- Bouncing Blocky Bastie Mascot + Hot Dog Progress Bar -->
+      <div class="my-6">
+        <div class="flex items-center justify-between text-xs font-bold text-purple-800 mb-2 px-1">
+          <span class="flex items-center gap-1.5">
+            <span class="mascot-bounce inline-block text-2xl">🧸</span>
+            <span id="loadingMascotLabel">Bastie sprinting on the Hot Dog Bar!</span>
+          </span>
+          <span id="loadingPercent" class="font-display text-sm text-pink-600">0%</span>
+        </div>
+        <div class="hotdog-track relative h-7 w-full rounded-full overflow-hidden p-1">
+          <div id="loadingBarFill" class="hotdog-sausage hotdog-mustard h-full rounded-full" style="width: 4%;"></div>
+        </div>
+      </div>
+
+      <!-- Rotating Cozy Loading Tips -->
+      <div class="rounded-2xl bg-purple-100/90 border border-purple-300 px-4 py-3 text-xs sm:text-sm font-semibold text-purple-950 min-h-[3.25rem] flex items-center justify-center">
+        <span id="loadingTipText">Pro-tip: Don't let Mikee moderate your chat!</span>
+      </div>
+
+      <!-- Startup Tap Trigger -->
+      <div class="mt-6">
+        <button id="startupTapBtn" class="rbx-btn w-full py-3.5 px-6 bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-600 text-white text-lg sm:text-xl tracking-wide">
+          ✨ Tap to Launch Mukbaby ✨
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FIRST-TIME HOST PROMPT MODAL ==================== -->
+  <div id="hostPromptModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+    <div class="pop-in max-w-md w-full rounded-3xl bg-gradient-to-b from-pink-100 via-purple-100 to-white text-slate-900 border-4 border-pink-400 shadow-2xl p-6 sm:p-7">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-3xl shadow-lg border-2 border-white">
+          🧑‍🍳
+        </div>
+        <div>
+          <span class="text-xs font-extrabold uppercase tracking-wider text-pink-600">Day 1 Studio Setup</span>
+          <h2 class="font-display text-2xl sm:text-3xl font-bold text-slate-900">Who is the mukbang host?</h2>
+        </div>
+      </div>
+      <p class="text-sm text-slate-600 mb-4 leading-relaxed">
+        Enter your host name below! It will be locked in and <strong class="text-purple-700">saved forever continuously</strong> across every session—including your scores, coins, unlocked tables, prompts, and milestones.
+      </p>
+
+      <label for="hostNameInput" class="block text-xs font-bold uppercase tracking-wider text-purple-800 mb-1.5">
+        Mukbang Host Name
+      </label>
+      <input
+        id="hostNameInput"
+        type="text"
+        maxlength="24"
+        value="Bastie"
+        placeholder="e.g. Bastie"
+        class="w-full px-4 py-3 rounded-2xl bg-white border-2 border-purple-300 focus:border-pink-500 focus:outline-none font-display text-lg font-bold text-slate-900 shadow-inner mb-4"
+      />
+
+      <div class="flex flex-wrap gap-2 mb-5">
+        <button type="button" data-preset-host="Bastie" class="preset-host-btn px-3 py-1.5 rounded-xl bg-pink-200/80 hover:bg-pink-300 text-pink-950 text-xs font-bold transition">
+          🧸 Bastie (Canon)
+        </button>
+        <button type="button" data-preset-host="Mukbaby Bastie" class="preset-host-btn px-3 py-1.5 rounded-xl bg-purple-200/80 hover:bg-purple-300 text-purple-950 text-xs font-bold transition">
+          ✨ Mukbaby Bastie
+        </button>
+        <button type="button" data-preset-host="Kei's Mukbaby" class="preset-host-btn px-3 py-1.5 rounded-xl bg-amber-200/80 hover:bg-amber-300 text-amber-950 text-xs font-bold transition">
+          💖 Kei's Mukbaby
+        </button>
+      </div>
+
+      <button id="saveHostForeverBtn" class="rbx-btn w-full py-3.5 px-5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white text-lg">
+        💾 Lock In Host & Save Forever
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== INTERACTIVE PROMPTS MODAL ==================== -->
+  <div id="promptModal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+    <div id="promptCard" class="pop-in max-w-lg w-full rounded-3xl bg-gradient-to-b from-slate-900 via-purple-950 to-slate-900 border-2 border-pink-400/70 shadow-2xl p-6 text-white">
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <span id="promptBadge" class="px-3 py-1 rounded-full bg-pink-500/20 border border-pink-400/50 text-pink-300 text-xs font-bold uppercase tracking-wider">
+          Live Stream Prompt
+        </span>
+        <button id="closePromptBtn" class="px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-slate-300">
+          Later
+        </button>
+      </div>
+      <h3 id="promptTitle" class="font-display text-2xl font-bold text-amber-300 mb-2">Prompt Title</h3>
+      <p id="promptDescription" class="text-sm text-slate-200 mb-5 leading-relaxed">Prompt question goes here.</p>
+      <div id="promptOptions" class="grid gap-2.5"></div>
+      <div id="promptResultBanner" class="hidden mt-4 p-3.5 rounded-2xl bg-emerald-500/20 border border-emerald-400/50 text-emerald-200 text-sm font-semibold"></div>
+    </div>
+  </div>
+
+  <!-- ==================== MINI-GAMES MODAL ==================== -->
+  <div id="minigameModal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+    <div class="pop-in max-w-lg w-full rounded-3xl bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-950 border-2 border-cyan-400/60 shadow-2xl p-6 text-white">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-cyan-300">Special Mini-Game</span>
+          <h3 id="minigameTitle" class="font-display text-2xl font-bold text-white">Mini-Game</h3>
+        </div>
+        <button id="closeMinigameBtn" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-slate-200">
+          ✕ Close
+        </button>
+      </div>
+      <p id="minigameDesc" class="text-xs sm:text-sm text-slate-300 mb-4">Instructions</p>
+
+      <!-- Mini-Game Arena -->
+      <div id="minigameArena" class="relative rounded-2xl bg-slate-950/90 border border-purple-500/40 p-4 min-h-[220px] flex flex-col items-center justify-center overflow-hidden">
+        <!-- Dynamic mini-game UI injected here -->
+      </div>
+
+      <div class="mt-4 flex items-center justify-between text-xs text-slate-300">
+        <span>Best Mini-Game High Score: <strong id="minigameHighScoreDisplay" class="text-amber-300">0</strong></span>
+        <span id="minigameStatusText" class="font-semibold text-pink-300">Ready!</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST NOTIFICATION ==================== -->
+  <div id="toastBanner" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 -translate-y-3 max-w-md w-[92%]">
+    <div class="rounded-2xl bg-slate-900/95 border-2 border-pink-400 shadow-2xl px-4 py-3 text-center">
+      <p id="toastMessage" class="font-display text-sm sm:text-base font-bold text-white"></p>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APPLICATION SHELL ==================== -->
+  <div id="mainApp" class="max-w-[1440px] mx-auto p-3 sm:p-5 space-y-4">
+
+    <!-- TOP HUD BAR -->
+    <header class="rounded-3xl bg-slate-900/85 backdrop-blur-xl border border-purple-500/35 p-3.5 sm:p-4 shadow-xl">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <!-- Brand & Persistent Saved Host Badge -->
+        <div class="flex flex-wrap items-center gap-2.5">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl sm:text-3xl">🧸</span>
+            <div>
+              <h1 class="font-display text-xl sm:text-2xl font-bold bg-gradient-to-r from-pink-400 via-fuchsia-400 to-cyan-300 bg-clip-text text-transparent leading-none">
+                MUKBABY
+              </h1>
+              <p class="text-[11px] text-slate-400 font-medium">3D Roblox Mukbang Simulator</p>
+            </div>
+          </div>
+
+          <div id="savedHostBadge" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-xs font-bold">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span id="savedHostBadgeText">Saved Forever • Host: Bastie</span>
+          </div>
+
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-500/20 border border-rose-400/40 text-rose-300 text-xs font-extrabold">
+            🔴 LIVE <span id="viewerCountDisplay">1,240</span>
+          </span>
+        </div>
+
+        <!-- Score, Coins, Hype & Controls -->
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div class="px-3 py-1.5 rounded-2xl bg-indigo-950/90 border border-indigo-400/40 text-xs">
+            <span class="text-indigo-300 block text-[10px] uppercase font-bold">Career Score</span>
+            <span id="careerScoreDisplay" class="font-display text-base sm:text-lg font-bold text-white">0</span>
+          </div>
+
+          <div class="px-3 py-1.5 rounded-2xl bg-amber-950/80 border border-amber-400/40 text-xs">
+            <span class="text-amber-300 block text-[10px] uppercase font-bold">Stream Coins</span>
+            <span id="coinsDisplay" class="font-display text-base sm:text-lg font-bold text-amber-300">₱500</span>
+          </div>
+
+          <div class="px-3 py-1.5 rounded-2xl bg-pink-950/80 border border-pink-400/40 text-xs">
+            <span class="text-pink-300 block text-[10px] uppercase font-bold">Hype & Streak</span>
+            <span class="font-display text-base sm:text-lg font-bold text-pink-300">
+              <span id="hypeDisplay">25%</span> • 🔥<span id="streakDisplay">1</span>
+            </span>
+          </div>
+
+          <button id="audioToggleBtn" class="rbx-btn px-3 py-2 bg-slate-800 text-xs text-cyan-200" title="Toggle Web Audio SFX & Chimes">
+            🔊 SFX ON
+          </button>
+
+          <button id="settingsDrawerBtn" class="rbx-btn px-3 py-2 bg-purple-800 text-xs text-white" title="Studio Settings & Save Management">
+            ⚙️ Save
+          </button>
+        </div>
+      </div>
+
+      <!-- UPCOMING MILESTONE & NEXT UNLOCK ROADMAP BAR -->
+      <div class="mt-3 pt-3 border-t border-white/10">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs mb-1.5">
+          <div class="flex items-center gap-2 font-semibold text-purple-200">
+            <span>🏆 Next Milestone Unlock:</span>
+            <span id="nextMilestoneTitle" class="font-display font-bold text-amber-300">Golden Chopsticks + Cozy Bedroom Desk LED Upgrade (500 pts)</span>
+          </div>
+          <div class="text-slate-300 font-semibold">
+            Progress: <span id="milestoneProgressText" class="text-cyan-300">0 / 500 pts</span>
+          </div>
+        </div>
+        <div class="w-full h-3 rounded-full bg-slate-800 overflow-hidden border border-purple-400/30">
+          <div id="milestoneProgressBar" class="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-amber-400 transition-all duration-300" style="width: 0%;"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- GRABFOOD / FOODPANDA PARODY DELIVERY BANNER -->
+    <div class="rounded-2xl bg-gradient-to-r from-pink-600/30 via-purple-600/30 to-cyan-600/30 border border-pink-400/30 overflow-hidden py-1.5 px-3">
+      <div class="ticker-track text-xs font-semibold text-pink-100 gap-8">
+        <span>🛵 GrabPanda Express: Free Bagoong drizzle with Kare-Kare orders!</span>
+        <span>🍗 Jollibee Chickenjoy Bucket Extra Gravy arriving at España & Studio!</span>
+        <span>🧋 Boba Pearl Catching Arcade active — catch brown sugar pearls for bonus ₱!</span>
+        <span>⚔️ Simp Alert: Defend the host when strangers spam "pogi" in chat!</span>
+        <span>🎂 Birthday Rating & "Do You Love Kei?" prompts unlock legendary gifts!</span>
+        <span>🛵 GrabPanda Express: Free Bagoong drizzle with Kare-Kare orders!</span>
+        <span>🍗 Jollibee Chickenjoy Bucket Extra Gravy arriving at España & Studio!</span>
+      </div>
+    </div>
+
+    <!-- MAIN WORKSPACE: 3D STAGE + CHAT & PROMPTS ON LEFT, 300-ITEM MENU & STUDIO ON RIGHT -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+
+      <!-- LEFT COLUMN (7 cols): 3D STAGE + INTERACTIVE PROMPTS & MINI-GAMES + CANON PBB CHAT -->
+      <div class="lg:col-span-7 space-y-4">
+
+        <!-- 3D ROBLOX STAGE -->
+        <section id="streamStageCard" class="stream-glow rounded-3xl bg-slate-900/90 p-3 sm:p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 px-1">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-1 rounded-lg bg-pink-500/20 border border-pink-400/40 text-pink-200 text-xs font-bold">
+                🎬 Table: <span id="activeTableNameLabel">Cozy Bedroom Desk</span>
+              </span>
+              <span class="px-2.5 py-1 rounded-lg bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-bold">
+                🍽️ Active Dish: <span id="activeDishLabel">Kare-Kare</span>
+              </span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span id="hostMoodBadge" class="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-400/40 text-amber-200 text-xs font-bold">
+                Mood: Happy Munching 😋
+              </span>
+            </div>
+          </div>
+
+          <!-- Three.js Canvas -->
+          <div id="threeContainer" class="border border-purple-500/40 shadow-inner">
+            <!-- Floating 2D/3D-style HTML overlay particles inside canvas container -->
+            <div id="floatingParticlesLayer" class="pointer-events-none absolute inset-0 overflow-hidden"></div>
+            <!-- Bottom-left Live Lower Third -->
+            <div class="pointer-events-none absolute bottom-3 left-3 right-3 flex flex-wrap items-end justify-between gap-2">
+              <div class="rounded-2xl bg-slate-950/80 backdrop-blur-md border border-pink-400/40 px-3.5 py-2">
+                <div class="text-[10px] uppercase tracking-wider text-pink-300 font-bold">Mukbaby Live Host</div>
+                <div id="lowerThirdHostName" class="font-display text-base sm:text-lg font-bold text-white">Bastie</div>
+                <div id="lowerThirdStatus" class="text-xs text-cyan-300">Ready to feast & hype chat!</div>
+              </div>
+              <div class="rounded-2xl bg-slate-950/80 backdrop-blur-md border border-amber-400/40 px-3 py-2 text-right">
+                <div class="text-[10px] uppercase tracking-wider text-amber-300 font-bold">Items Eaten</div>
+                <div id="itemsEatenCounter" class="font-display text-base font-bold text-white">0 / 300</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Primary Gameplay Action Buttons (Outside Canvas) -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+            <button id="takeBiteBtn" class="rbx-btn py-2.5 px-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs sm:text-sm">
+              🥢 Take Bite (+Score)
+            </button>
+            <button id="defendSimpsBtn" class="rbx-btn py-2.5 px-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs sm:text-sm">
+              🤺 Defend vs Simps!
+            </button>
+            <button id="triggerPromptBtn" class="rbx-btn py-2.5 px-3 bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 text-xs sm:text-sm">
+              💌 Prompt Event
+            </button>
+            <button id="launchMinigameBtn" class="rbx-btn py-2.5 px-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs sm:text-sm">
+              🎮 Mini-Game
+            </button>
+          </div>
+
+          <!-- Quick Mini-Game Selector Strip -->
+          <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="text-[11px] font-bold text-slate-400 mr-1">Mini-Games:</span>
+            <button data-mg="bagoong" class="mg-quick-btn px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-pink-600/40 border border-white/10 text-[11px] font-semibold text-pink-200 transition">
+              🥄 Bagoong Balance
+            </button>
+            <button data-mg="happymeal" class="mg-quick-btn px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-amber-600/40 border border-white/10 text-[11px] font-semibold text-amber-200 transition">
+              🎁 Happy Meal Unboxing
+            </button>
+            <button data-mg="spicy" class="mg-quick-btn px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-red-600/40 border border-white/10 text-[11px] font-semibold text-red-200 transition">
+              🌶️ Siling Labuyo Mash
+            </button>
+            <button data-mg="boba" class="mg-quick-btn px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-cyan-600/40 border border-white/10 text-[11px] font-semibold text-cyan-200 transition">
+              🧋 Boba Pearl Catch
+            </button>
+            <button data-mg="mikee" class="mg-quick-btn px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-purple-600/40 border border-white/10 text-[11px] font-semibold text-purple-200 transition">
+              🚫 Mikee Ban Speedrun
+            </button>
+          </div>
+        </section>
+
+        <!-- INTERACTIVE PROMPTS QUICK LAUNCHER -->
+        <section class="rounded-3xl bg-slate-900/85 border border-purple-500/30 p-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h2 class="font-display text-lg font-bold text-white">💬 Relationship & Birthday Prompts</h2>
+              <p class="text-xs text-slate-400">Trigger special chat reactions, couple overlays, and massive rewards.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button id="openBirthdayPromptBtn" class="rbx-btn px-3.5 py-2 bg-gradient-to-r from-amber-400 to-pink-500 text-slate-950 text-xs">
+                🎂 Birthday Rating (1-10)
+              </button>
+              <button id="openKeiPromptBtn" class="rbx-btn px-3.5 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs">
+                💖 Do You Love Kei?
+              </button>
+            </div>
+          </div>
+          <div id="unlockedRewardsStrip" class="flex flex-wrap gap-1.5 text-xs">
+            <!-- Populated dynamically with unlocked rewards -->
+          </div>
+        </section>
+
+        <!-- CANON PBB HOUSEMATE CHAT & STRANGER SIMP WAR -->
+        <section class="rounded-3xl bg-slate-900/90 border border-pink-500/30 p-4 flex flex-col">
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-white/10">
+            <div>
+              <h2 class="font-display text-lg font-bold text-white">📡 Canon PBB Housemate Chat & Simp War</h2>
+              <p class="text-xs text-slate-400">Gehlee, Jeo, Shea, Primo, Nathan, Mikee — plus strangers calling host "pogi"!</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-1 rounded-xl bg-rose-500/20 border border-rose-400/40 text-rose-200 text-xs font-bold">
+                Simps Defended: <span id="simpsDefendedCount">0</span>
+              </span>
+              <button id="clearMikeeBtn" class="px-3 py-1.5 rounded-xl bg-purple-600/40 hover:bg-purple-600/60 border border-purple-400/40 text-xs font-bold text-purple-100">
+                🚫 Ban Mikee
+              </button>
+            </div>
+          </div>
+
+          <div id="chatFeed" class="h-64 sm:h-72 overflow-y-auto space-y-2 pr-1 rounded-2xl bg-slate-950/70 p-3 border border-white/5">
+            <!-- Chat messages stream here -->
+          </div>
+
+          <form id="chatReplyForm" class="mt-3 flex gap-2">
+            <input
+              id="chatReplyInput"
+              type="text"
+              placeholder="Reply to chat or roast strangers..."
+              class="flex-1 px-3.5 py-2.5 rounded-2xl bg-slate-950 border border-purple-500/40 focus:border-pink-400 focus:outline-none text-sm text-white"
+            />
+            <button type="submit" class="rbx-btn px-4 py-2.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs sm:text-sm">
+              Send
+            </button>
+          </form>
+        </section>
+      </div>
+
+      <!-- RIGHT COLUMN (5 cols): 300-ITEM MEGA MENU + STUDIO & MILESTONES -->
+      <div class="lg:col-span-5 space-y-4">
+
+        <!-- STUDIO CUSTOMIZATION & TABLE SETTINGS -->
+        <section class="rounded-3xl bg-slate-900/90 border border-cyan-500/30 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="font-display text-lg font-bold text-white">🏠 Studio & 3D Table Settings</h2>
+              <p class="text-xs text-slate-400">Switch tables, outfits & unlock milestone sets.</p>
+            </div>
+            <span class="text-xs font-bold px-2.5 py-1 rounded-xl bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
+              Roblox 3D Set
+            </span>
+          </div>
+
+          <!-- Table Selector -->
+          <div>
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">3D Tables</label>
+            <div id="tableSelectorGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+          </div>
+
+          <!-- Outfit & Aesthetic Props -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            <div>
+              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Host Outfit Color</label>
+              <div id="outfitColorButtons" class="flex flex-wrap gap-1.5"></div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Active Props & Gear</label>
+              <div id="activeGearBadges" class="flex flex-wrap gap-1"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 300-ITEM MEGA MENU SYSTEM -->
+        <section class="rounded-3xl bg-slate-900/90 border border-purple-500/35 p-4 flex flex-col">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h2 class="font-display text-lg font-bold text-white">🍱 300-Item Mega Menu</h2>
+              <p class="text-xs text-slate-400">GrabFood / Foodpanda Parody Catalog • 6 Categories</p>
+            </div>
+            <span id="menuCountBadge" class="px-2.5 py-1 rounded-xl bg-pink-500/20 border border-pink-400/40 text-pink-200 text-xs font-bold">
+              300 Items
+            </span>
+          </div>
+
+          <!-- Search & Quick Filter -->
+          <div class="flex gap-2 mb-3">
+            <input
+              id="menuSearchInput"
+              type="text"
+              placeholder="Search Kare-Kare, Chickenjoy, Halo-Halo, Boba..."
+              class="flex-1 px-3.5 py-2 rounded-2xl bg-slate-950 border border-purple-500/40 focus:border-pink-400 focus:outline-none text-xs sm:text-sm text-white"
+            />
+            <button id="orderRandomBtn" class="rbx-btn px-3 py-2 bg-gradient-to-r from-amber-400 to-pink-500 text-slate-950 text-xs whitespace-nowrap">
+              🎲 Random Feast
+            </button>
+          </div>
+
+          <!-- 6 Category Tabs -->
+          <div id="menuCategoryTabs" class="flex flex-wrap gap-1.5 mb-3"></div>
+
+          <!-- Menu Item List -->
+          <div id="menuItemsList" class="h-[430px] overflow-y-auto space-y-2 pr-1 rounded-2xl bg-slate-950/75 p-2.5 border border-white/5">
+            <!-- 300 items rendered dynamically -->
+          </div>
+        </section>
+
+        <!-- MILESTONE ROADMAP CARD -->
+        <section class="rounded-3xl bg-slate-900/90 border border-amber-500/30 p-4">
+          <h2 class="font-display text-lg font-bold text-amber-300 mb-2">🌟 Milestone Roadmap & Unlocks</h2>
+          <div id="milestonesList" class="space-y-2 text-xs">
+            <!-- Milestones rendered dynamically -->
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SETTINGS & SAVE MANAGEMENT MODAL ==================== -->
+  <div id="settingsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+    <div class="pop-in max-w-md w-full rounded-3xl bg-slate-900 border-2 border-purple-400/60 p-6 text-white space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-display text-2xl font-bold text-pink-300">⚙️ Host & Save Settings</h3>
+        <button id="closeSettingsBtn" class="px-3 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold">✕</button>
+      </div>
+      <div class="p-3.5 rounded-2xl bg-slate-950/80 border border-white/10 text-xs space-y-1">
+        <p><strong>Saved Host:</strong> <span id="settingsHostName" class="text-emerald-300">Bastie</span></p>
+        <p><strong>Career Score:</strong> <span id="settingsCareerScore" class="text-amber-300">0</span></p>
+        <p><strong>Unique Dishes Eaten:</strong> <span id="settingsEatenCount" class="text-cyan-300">0 / 300</span></p>
+        <p><strong>Storage Mode:</strong> <span class="text-emerald-400">Continuous localStorage Auto-Save Active</span></p>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-300 mb-1">Update Mukbang Host Name</label>
+        <div class="flex gap-2">
+          <input id="renameHostInput" type="text" maxlength="24" class="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-purple-400/40 text-sm text-white" />
+          <button id="updateHostNameBtn" class="rbx-btn px-4 py-2 bg-emerald-500 text-slate-950 text-xs">Save Name</button>
+        </div>
+      </div>
+
+      <div class="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
+        <span class="text-xs text-slate-400">Need a fresh start?</span>
+        <button id="resetSaveBtn" class="px-3.5 py-2 rounded-xl bg-rose-600/30 hover:bg-rose-600/50 border border-rose-400/50 text-rose-200 text-xs font-bold">
+          🗑️ Reset Save
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * MUKBABY: Ultimate 3D Roblox-Inspired Mukbang Livestream Simulator
+     * Single-file self-contained implementation with Three.js, Web Audio API procedural SFX,
+     * persistent localStorage save system, 300-item catalog, canon PBB chat + simp war,
+     * interactive prompts, and 5 distinct mini-games.
+     */
+
+    // =========================================================================
+    // 1. PROCEDURAL WEB AUDIO API SOUND EFFECTS & COZY CHIMES
+    // =========================================================================
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) {
+            this.ctx = new AudioCtx();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume().catch(() => {});
+        }
+      }
+
+      playTone(freq, duration = 0.14, type = 'sine', gainVal = 0.12, slideTo = null) {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          if (!this.ctx) return;
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, now);
+          if (slideTo) {
+            osc.frequency.exponentialRampToValueAtTime(Math.max(40, slideTo), now + duration);
+          }
+          gain.gain.setValueAtTime(gainVal, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + duration + 0.02);
+        } catch (_) {}
+      }
+
+      playPop() {
+        this.playTone(420, 0.11, 'triangle', 0.15, 760);
+      }
+
+      playCrunch() {
+        this.playTone(210, 0.08, 'square', 0.08, 120);
+        setTimeout(() => this.playTone(340, 0.07, 'triangle', 0.09, 190), 55);
+      }
+
+      playChime() {
+        [523.25, 659.25, 783.99, 1046.5].forEach((note, idx) => {
+          setTimeout(() => this.playTone(note, 0.22, 'sine', 0.11), idx * 75);
+        });
+      }
+
+      playBuzz() {
+        this.playTone(160, 0.18, 'sawtooth', 0.1, 95);
+      }
+
+      playSuperChat() {
+        [587.33, 739.99, 880, 1174.66].forEach((n, i) => {
+          setTimeout(() => this.playTone(n, 0.25, 'triangle', 0.14), i * 80);
+        });
+      }
+    }
+
+    const sfx = new SoundEngine();
+
+    // =========================================================================
+    // 2. 300-ITEM MEGA MENU CATALOG (6 CATEGORIES)
+    // =========================================================================
+    const MENU_CATEGORIES = [
+      { id: 'all', label: 'All (300)' },
+      { id: 'pinoy', label: '1. Pinoy Ulam (1–75)' },
+      { id: 'fastfood', label: '2. Fast Food & Kids (76–150)' },
+      { id: 'espana', label: '3. España & Street (151–225)' },
+      { id: 'desserts', label: '4. Desserts (226–275)' },
+      { id: 'drinks', label: '5. Drinks & Boba (276–300)' }
+    ];
+
+    function buildMegaMenu() {
+      const items = [];
+      let idCounter = 1;
+
+      const addItem = (category, name, emoji, price, scoreGain, hypeGain, miniGame = null, tag = '') => {
+        items.push({
+          id: idCounter++,
+          category,
+          name,
+          emoji,
+          price,
+          scoreGain,
+          hypeGain,
+          miniGame,
+          tag
+        });
+      };
+
+      // 1. Pinoy Lutong Bahay & Ulam (Items 1–75)
+      const pinoyBase = [
+        ['Kare-Kare', '🍲', 240, 120, 50, 'bagoong', '+50% Hype & Bagoong Drizzle!'],
+        ['Crispy Pata', '🍖', 320, 140, 22, null, 'Crowd Favorite'],
+        ['Sinigang na Baboy', '🥣', 220, 105, 18, null, 'Sour Comfort'],
+        ['Adobong Pusit', '🦑', 210, 100, 16, null, 'Ink Feast'],
+        ['Bulalo', '🦴', 350, 155, 25, null, 'Bone Marrow S-Tier'],
+        ['Sizzling Sisig', '🍳', 230, 125, 24, 'spicy', 'Sizzling Heat'],
+        ['Dinuguan', '🍛', 190, 95, 15, null, 'Classic Ulam'],
+        ['Bangus Sisig', '🐟', 200, 100, 16, null, 'Crispy Fish'],
+        ['Laing', '🌿', 180, 90, 14, null, 'Gata Rich'],
+        ['Bicol Express', '🌶️', 225, 135, 28, 'spicy', 'Ultra Spicy!'],
+        ['Chicken Adobo', '🍗', 195, 100, 18, null, 'Staple'],
+        ['Pork Humba', '🥩', 250, 115, 18, null, 'Sweet Savory'],
+        ['Tortang Talong', '🍆', 140, 75, 12, null, 'Cozy'],
+        ['Ginataang Kalabasa at Sitaw', '🎃', 175, 85, 14, null, 'Veggie Boost'],
+        ['Pinakbet Ilocos', '🥬', 185, 90, 15, null, 'Bagoong Isda'],
+        ['Lechon Kawali', '🥓', 270, 130, 22, null, 'Extra Crunchy'],
+        ['Paksiw na Pata', '🍲', 260, 115, 17, null, 'Vinegar Glaze'],
+        ['Igado', '🍖', 210, 100, 16, null, 'Ilocano Classic'],
+        ['Calderetang Baka', '🥘', 290, 135, 20, null, 'Rich Tomato'],
+        ['Menudo', '🍲', 215, 105, 17, null, 'Party Ulam'],
+        ['Afritada', '🍗', 205, 100, 16, null, 'Home Style'],
+        ['Nilagang Baka', '🥩', 280, 125, 19, null, 'Clear Broth'],
+        ['Tinolang Manok', '🍲', 200, 105, 18, null, 'Ginger Warmth'],
+        ['Inihaw na Liempo', '🔥', 240, 120, 20, null, 'Charcoal Grill'],
+        ['Sinampalukang Manok', '🍋', 225, 110, 18, null, 'Tamarind Leaf']
+      ];
+      for (let i = 0; i < 75; i++) {
+        const base = pinoyBase[i % pinoyBase.length];
+        const suffix = i >= pinoyBase.length ? ` Special Vol. ${Math.floor(i / pinoyBase.length) + 1}` : '';
+        addItem('pinoy', base[0] + suffix, base[1], base[2] + (i % 5) * 10, base[3] + (i % 4) * 5, base[4], base[5], base[6]);
+      }
+
+      // 2. Fast Food & Kids Meals (Items 76–150)
+      const fastFoodBase = [
+        ['McDo Happy Meal', '🎁', 185, 130, 25, 'happymeal', 'Toy Unboxing Mini-Game!'],
+        ['Burger King Whopper & Onion Rings', '🍔', 295, 135, 22, null, 'Flame Grilled'],
+        ['Jollibee Chickenjoy Bucket with Extra Gravy', '🍗', 450, 180, 35, null, 'S-Tier Crisp'],
+        ['Chowking Chao Fan & Siomai', '🥟', 175, 110, 20, null, 'Pan-Fried Combo'],
+        ['KFC Zinger Stacker', '🥪', 245, 130, 24, 'spicy', 'Double Crunch'],
+        ["Wendy's Frosty & Baconator", '🍦', 310, 140, 23, null, 'Choco Frosty Dip'],
+        ['Jollibee Jolly Spaghetti', '🍝', 120, 95, 19, null, 'Sweet Style'],
+        ['McDo Big Mac Meal', '🍔', 260, 125, 20, null, 'Special Sauce'],
+        ['Popeyes Spicy Chicken', '🍗', 250, 135, 25, 'spicy', 'Louisiana Heat'],
+        ['Mang Inasal Pecho Paa Unlimited Rice', '🍚', 235, 150, 30, null, 'Chicken Oil!'],
+        ['Kenny Rogers Roasters Solo B', '🍗', 285, 125, 19, null, 'Herb Roasted'],
+        ['Tokyo Tokyo Red Bowl', '🍜', 215, 110, 18, null, 'Teriyaki'],
+        ['Pizza Hut Stuffed Crust Box', '🍕', 490, 165, 28, null, 'Cheese Pull'],
+        ['Shakeys SuperCard Chicken & Mojos', '🥔', 420, 155, 26, null, 'Mojo Potato'],
+        ['Greenwich Lasagna Supreme', '🍝', 220, 110, 18, null, 'Creamy Bake']
+      ];
+      for (let i = 0; i < 75; i++) {
+        const base = fastFoodBase[i % fastFoodBase.length];
+        const suffix = i >= fastFoodBase.length ? ` Mega Box #${i + 1}` : '';
+        addItem('fastfood', base[0] + suffix, base[1], base[2] + (i % 4) * 15, base[3] + (i % 5) * 5, base[4], base[5], base[6]);
+      }
+
+      // 3. España Fusion Alley & Street Food (Items 151–225)
+      const espanaBase = [
+        ['Betamax (Grilled Dugo)', '🍢', 60, 95, 20, 'spicy', 'España Alley Classic'],
+        ['Isaw Manok & Baboy', ' skewer', 75, 105, 22, null, 'Street Royalty'],
+        ['Adidas (Chicken Feet)', '🍗', 85, 100, 19, null, 'Collagen Boost'],
+        ['Fishball & Kwek-Kwek', '🥚', 90, 120, 26, 'bagoong', 'Manong Sauce Dip!'],
+        ['Takoyaki', '🐙', 135, 115, 21, null, 'Bonito Flakes'],
+        ['Korean Cheese Corn Dog', '🌭', 145, 130, 25, null, 'Mozzarella Stretch'],
+        ['Siomai Rice with Chili Garlic Oil', '🥟', 110, 125, 27, 'spicy', 'Chili Garlic Hit'],
+        ['Proben Skewers', '🍢', 80, 100, 18, null, 'Crispy'],
+        ['Calamares Street Cup', '🦑', 115, 110, 19, null, 'Garlic Mayo'],
+        ['Tukneneng', '🥚', 95, 110, 20, null, 'Orange Batter'],
+        ['Balut sa Puti', '🥚', 70, 135, 28, null, 'Bold Mukbang'],
+        ['Penoy', '🥚', 65, 95, 16, null, 'Mild Street'],
+        ['Lugaw with Tokwa’t Baboy', '🥣', 130, 120, 22, null, 'Midnight España'],
+        ['Tapsilog España Special', '🍳', 155, 125, 22, null, 'All-Day Silog'],
+        ['Longsilog', '🌭', 145, 115, 20, null, 'Sweet Longganisa']
+      ];
+      for (let i = 0; i < 75; i++) {
+        const base = espanaBase[i % espanaBase.length];
+        const emoji = base[1] === ' skewer' ? '🍢' : base[1];
+        const suffix = i >= espanaBase.length ? ` Alley Edition #${i + 1}` : '';
+        addItem('espana', base[0] + suffix, emoji, base[2] + (i % 5) * 10, base[3] + (i % 4) * 5, base[4], base[5], base[6]);
+      }
+
+      // 4. Cravings, Desserts & Sweets (Items 226–275)
+      const dessertBase = [
+        ['Halo-Halo Special', '🍧', 195, 145, 30, 'boba', 'Ube & Leche Flan Tower'],
+        ['Ube Cheese Pandesal', '🥖', 120, 110, 20, null, 'Melted Cheese'],
+        ['Leche Flan', '🍮', 140, 115, 21, null, 'Caramel Glaze'],
+        ['Mango Graham Cake', '🥭', 210, 135, 25, null, 'Chilled Slice'],
+        ['Turon with Jackfruit', '🍌', 95, 110, 20, null, 'Caramelized Crunch'],
+        ['J.Co Alcapone Donuts', '🍩', 260, 130, 24, null, 'White Choc Almond'],
+        ['Red Ribbon Chocolate Roll', '🍰', 230, 125, 22, null, 'Soft Sponge'],
+        ['Buko Pandan', '🥥', 150, 115, 20, null, 'Creamy Pandan'],
+        ['Mais Con Yelo', '🌽', 135, 110, 19, null, 'Sweet Corn'],
+        ['Saging Con Yelo', '🍌', 135, 110, 19, null, 'Saba Delight']
+      ];
+      for (let i = 0; i < 50; i++) {
+        const base = dessertBase[i % dessertBase.length];
+        const suffix = i >= dessertBase.length ? ` Sweet Box #${i + 1}` : '';
+        addItem('desserts', base[0] + suffix, base[1], base[2] + (i % 4) * 15, base[3] + (i % 5) * 5, base[4], base[5], base[6]);
+      }
+
+      // 5. Drinks & Boba (Items 276–300)
+      const drinkBase = [
+        ['Iced Barako Coffee', '☕', 125, 105, 18, null, 'Batangas Bold'],
+        ['Melon Milk Tea with Brown Sugar Pearls', '🧋', 165, 140, 28, 'boba', 'Boba Catch Bonus!'],
+        ['Coke Mismo in Glass Bottle', '🥤', 55, 100, 19, null, 'Ice Cold Fizz'],
+        ['San Mig Light (Root Beer Cozy Edition)', '🍺', 130, 115, 21, null, 'Cozy Stream Sip'],
+        ['Samalamig', '🧃', 60, 100, 18, null, 'Sago’t Gulaman'],
+        ['Four Seasons Juice', '🍹', 85, 105, 18, null, 'Refreshing'],
+        ['Matcha Strawberry Latte', '🍓', 175, 130, 24, null, 'Pastel Aesthetic'],
+        ['Taro Cheesecake Milk Tea', '💜', 170, 135, 25, 'boba', 'Cream Cheese Foam'],
+        ['Mango Sago', '🥭', 155, 125, 22, null, 'Chewy Sago'],
+        ['Calamansi Honey Cooler', '🍋', 105, 105, 18, null, 'Zesty Reset']
+      ];
+      for (let i = 0; i < 25; i++) {
+        const base = drinkBase[i % drinkBase.length];
+        const suffix = i >= drinkBase.length ? ` XL #${i + 1}` : '';
+        addItem('drinks', base[0] + suffix, base[1], base[2] + (i % 3) * 10, base[3] + (i % 4) * 5, base[4], base[5], base[6]);
+      }
+
+      return items;
+    }
+
+    const MEGA_MENU = buildMegaMenu();
+
+    // =========================================================================
+    // 3. TABLES, MILESTONES, CANON PBB HOUSEMATES & LOADING TIPS
+    // =========================================================================
+    const STUDIO_TABLES = [
+      {
+        id: 'cozy_desk',
+        name: 'Cozy Bedroom Desk',
+        desc: 'LED strip lights & gaming PC setup',
+        cost: 0,
+        milestoneReq: 0,
+        bgHex: 0x1e1b4b,
+        tableHex: 0x7c3aed,
+        accentHex: 0xf472b6
+      },
+      {
+        id: 'espana_balcony',
+        name: 'España Apartment Balcony',
+        desc: 'Sunset Manila skyline view',
+        cost: 400,
+        milestoneReq: 1500,
+        bgHex: 0x4c1d95,
+        tableHex: 0xd97706,
+        accentHex: 0xfb7185
+      },
+      {
+        id: 'pbb_living',
+        name: 'PBB House Living Room',
+        desc: 'Classic Big Brother couch & camera angles',
+        cost: 900,
+        milestoneReq: 7000,
+        bgHex: 0x172554,
+        tableHex: 0x2563eb,
+        accentHex: 0x38bdf8
+      },
+      {
+        id: 'penthouse_marble',
+        name: 'Luxury Penthouse Dining Table',
+        desc: 'Marble finish with golden trim',
+        cost: 1800,
+        milestoneReq: 15000,
+        bgHex: 0x291528,
+        tableHex: 0xf8fafc,
+        accentHex: 0xfbbf24
+      }
+    ];
+
+    const MILESTONES = [
+      {
+        id: 'm1',
+        pts: 500,
+        title: 'Golden Chopsticks + Cozy Bedroom Desk LED Upgrade',
+        rewardLabel: 'Golden Chopsticks 🥢✨',
+        coinsBonus: 250
+      },
+      {
+        id: 'm2',
+        pts: 1500,
+        title: 'España Apartment Sunset Balcony Table',
+        rewardLabel: 'España Balcony Set 🌇',
+        coinsBonus: 500
+      },
+      {
+        id: 'm3',
+        pts: 3500,
+        title: 'Kei Couple Overlay & Matching Hoodies Unlock',
+        rewardLabel: 'Kei Couple Hoodies 💖👕',
+        coinsBonus: 900
+      },
+      {
+        id: 'm4',
+        pts: 7000,
+        title: 'PBB House Living Room Set & VIP Crown',
+        rewardLabel: 'PBB House Set & VIP Crown 👑',
+        coinsBonus: 1500
+      },
+      {
+        id: 'm5',
+        pts: 15000,
+        title: 'Luxury Penthouse Marble Table + Golden Birthday Cake Trophy',
+        rewardLabel: 'Penthouse Marble & Golden Cake 🏆🎂',
+        coinsBonus: 3000
+      }
+    ];
+
+    const OUTFIT_COLORS = [
+      { name: 'Pink Neon', hex: '#ec4899', threeHex: 0xec4899 },
+      { name: 'Sky Cyan', hex: '#06b6d4', threeHex: 0x06b6d4 },
+      { name: 'Kei Blush', hex: '#fb7185', threeHex: 0xfb7185 },
+      { name: 'Royal Violet', hex: '#8b5cf6', threeHex: 0x8b5cf6 },
+      { name: 'Gold Champion', hex: '#f59e0b', threeHex: 0xf59e0b }
+    ];
+
+    const PBB_HOUSEMATES = [
+      {
+        name: 'Gehlee',
+        role: 'Wholesome Hype',
+        badgeColor: 'text-pink-300 bg-pink-500/20',
+        lines: [
+          "Let's go {host}!! So proud of this mukbang! 💖",
+          "Grabe {host}, ang cutieee mo mag-eat!! ✨💖",
+          "Send ko agad good vibes kay {host}!! 🌸"
+        ]
+      },
+      {
+        name: 'Jeo',
+        role: 'Bro Roast & Review',
+        badgeColor: 'text-cyan-300 bg-cyan-500/20',
+        lines: [
+          "Bro save some crispy pata for me wth 😂",
+          "Bilisan mo {host}, baka maubusan ng gravy! 💀",
+          "Solid food review {host}, drop tier list bro!"
+        ]
+      },
+      {
+        name: 'Shea',
+        role: 'Gentle Support',
+        badgeColor: 'text-emerald-300 bg-emerald-500/20',
+        lines: [
+          "Take a sip of water {host}, grabe yung anghang! 💧",
+          "Dahan-dahan lang {host}, nandito lang kami nanonood 🌷",
+          "Ang sarap ng {dish}, stay hydrated {host}! 💧"
+        ]
+      },
+      {
+        name: 'Primo',
+        role: 'Analytical Tier-Lister',
+        badgeColor: 'text-indigo-300 bg-indigo-500/20',
+        lines: [
+          "{dish} is S-tier, good choice {host} 🧠",
+          "Statistically speaking, {host}'s bite pace is optimal 📊",
+          "Analyzing flavor profile of {dish}... 9.7/10 🧠"
+        ]
+      },
+      {
+        name: 'Nathan',
+        role: 'Hype Train Conductor',
+        badgeColor: 'text-amber-300 bg-amber-500/20',
+        lines: [
+          "LETS GOOO 10K VIEWERS TRAIN CHOO CHOO 🔥",
+          "SUPER CHAT INCOMING FOR {host}!! 🚀🔥",
+          "NO BRAKES ON THIS MUKBABY HYPE TRAIN!! 🔥"
+        ]
+      },
+      {
+        name: 'Mikee',
+        role: 'Snarky Hater',
+        badgeColor: 'text-rose-300 bg-rose-500/20',
+        isMikee: true,
+        lines: [
+          "Wait why is {host} eating like that? So loud 🙄",
+          "I should moderate this chat, {host} is rushing 💀",
+          "Mid reaction tbh {host}, do better 🙄"
+        ]
+      }
+    ];
+
+    const STRANGER_SIMP_LINES = [
+      "Stranger_902: Hala ang pogi ni {host}!! 😍",
+      "SimpKing_MN: {host} pogi mo sobra pakasal na tayo!! 💕",
+      "EspañaLurker: Pogi ng host natin dito oh!! 😍",
+      "RandomViewer77: Grabe pogi ni {host} habang kumakain!! 💖"
+    ];
+
+    const LOADING_TIPS = [
+      "Pro-tip: Don't let Mikee moderate your chat!",
+      "Ordering Kare-Kare increases chat hype by 50%!",
+      "Defend Bastie from simp strangers in the comment section!",
+      "Answer the 'Do You Love Kei?' prompt to unlock couple hoodies & Golden Chopsticks!",
+      "Every bite, mini-game, and simp defense saves automatically forever!"
+    ];
+
+    // =========================================================================
+    // 4. CONTINUOUS SAVED PROGRESS (localStorage)
+    // =========================================================================
+    const STORAGE_KEY = 'mukbaby_save_v1';
+
+    function defaultState() {
+      return {
+        hostName: '',
+        hostLocked: false,
+        careerScore: 0,
+        coins: 500,
+        hype: 25,
+        streak: 1,
+        viewers: 1240,
+        itemsEatenIds: [],
+        activeDishId: 1,
+        activeTableId: 'cozy_desk',
+        unlockedTableIds: ['cozy_desk'],
+        outfitIndex: 0,
+        unlockedMilestones: [],
+        unlockedRewards: ['Cozy Starter Mic 🎙️'],
+        simpsDefended: 0,
+        mikeeBannedCount: 0,
+        birthdayPromptDone: false,
+        keiPromptDone: false,
+        miniGameHighScores: {
+          bagoong: 0,
+          happymeal: 0,
+          spicy: 0,
+          boba: 0,
+          mikee: 0
+        },
+        updatedAt: Date.now()
+      };
+    }
+
+    let gameState = loadGameState();
+
+    function loadGameState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return defaultState();
+        const parsed = JSON.parse(raw);
+        return {
+          ...defaultState(),
+          ...parsed,
+          miniGameHighScores: {
+            ...defaultState().miniGameHighScores,
+            ...(parsed.miniGameHighScores || {})
+          }
+        };
+      } catch (_) {
+        return defaultState();
+      }
+    }
+
+    function saveGameState() {
+      gameState.updatedAt = Date.now();
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
+      } catch (_) {}
+      renderHud();
+    }
+
+    // =========================================================================
+    // 5. THREE.JS 3D ROBLOX-INSPIRED SCENE & VISUAL EFFECTS
+    // =========================================================================
+    let scene, camera, renderer;
+    let hostGroup, headMesh, leftArm, rightArm, leftLeg, rightLeg, torsoMesh, hairMesh, foodPropMesh;
+    let tableMesh, ringLightMesh, studioBgMesh;
+    let sceneParticles = [];
+    let isOrbitDragging = false;
+    let prevPointerX = 0;
+    let cameraYaw = 0;
+    let hostAnimPhase = 0;
+    let hostMood = 'happy'; // happy, spicy, annoyed, love
+
+    function initThreeScene() {
+      const container = document.getElementById('threeContainer');
+      if (!container || typeof THREE === 'undefined') return;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x1e1b4b);
+
+      const width = container.clientWidth || 640;
+      const height = container.clientHeight || 380;
+      camera = new THREE.PerspectiveCamera(48, width / height, 0.1, 100);
+      camera.position.set(0, 2.35, 5.4);
+      camera.lookAt(0, 1.35, 0);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      container.innerHTML = '';
+      const overlay = document.createElement('div');
+      overlay.id = 'floatingParticlesLayer';
+      overlay.className = 'pointer-events-none absolute inset-0 overflow-hidden';
+      container.appendChild(renderer.domElement);
+      container.appendChild(overlay);
+
+      // Lighting
+      const ambient = new THREE.AmbientLight(0xffffff, 0.85);
+      scene.add(ambient);
+
+      const keyLight = new THREE.DirectionalLight(0xfff1f2, 0.9);
+      keyLight.position.set(3, 6, 4);
+      scene.add(keyLight);
+
+      const rimLight = new THREE.PointLight(0xf472b6, 1.4, 15);
+      rimLight.position.set(-3, 3, 2);
+      scene.add(rimLight);
+
+      const cyanLight = new THREE.PointLight(0x22d3ee, 1.2, 15);
+      cyanLight.position.set(3, 2.5, 2);
+      scene.add(cyanLight);
+
+      // Studio Backdrop Wall
+      const wallGeo = new THREE.BoxGeometry(14, 7, 0.4);
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0x2e1065, roughness: 0.7 });
+      studioBgMesh = new THREE.Mesh(wallGeo, wallMat);
+      studioBgMesh.position.set(0, 2.4, -2.6);
+      scene.add(studioBgMesh);
+
+      // Floor
+      const floorGeo = new THREE.BoxGeometry(14, 0.4, 10);
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+      const floorMesh = new THREE.Mesh(floorGeo, floorMat);
+      floorMesh.position.set(0, -0.6, 0);
+      scene.add(floorMesh);
+
+      // 3D Ring Light behind Host
+      const ringGeo = new THREE.TorusGeometry(1.35, 0.08, 16, 40);
+      const ringMat = new THREE.MeshStandardMaterial({
+        color: 0xf472b6,
+        emissive: 0xec4899,
+        emissiveIntensity: 0.7
+      });
+      ringLightMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringLightMesh.position.set(0, 2.2, -1.8);
+      scene.add(ringLightMesh);
+
+      // Blocky Roblox-style Host Avatar ("Bastie" / Custom Host)
+      hostGroup = new THREE.Group();
+      hostGroup.position.set(0, 0, -0.35);
+
+      const outfitHex = OUTFIT_COLORS[gameState.outfitIndex]?.threeHex || 0xec4899;
+      const skinMat = new THREE.MeshStandardMaterial({ color: 0xfcd34d, roughness: 0.5 });
+      const outfitMat = new THREE.MeshStandardMaterial({ color: outfitHex, roughness: 0.45 });
+      const hairMat = new THREE.MeshStandardMaterial({ color: 0x1e1b4b, roughness: 0.6 });
+      const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+
+      // Torso (Blocky Roblox)
+      torsoMesh = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.15, 0.58), outfitMat);
+      torsoMesh.position.set(0, 1.15, 0);
+      hostGroup.add(torsoMesh);
+
+      // Head
+      headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.88, 0.88), skinMat);
+      headMesh.position.set(0, 2.18, 0);
+      hostGroup.add(headMesh);
+
+      // Signature Blocky Hair
+      hairMesh = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.36, 0.95), hairMat);
+      hairMesh.position.set(0, 2.66, 0);
+      hostGroup.add(hairMesh);
+
+      // Eyes (Expressive blocks)
+      const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+      const leftEye = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.06), eyeMat);
+      leftEye.position.set(-0.2, 2.22, 0.44);
+      const rightEye = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.06), eyeMat);
+      rightEye.position.set(0.2, 2.22, 0.44);
+      hostGroup.add(leftEye, rightEye);
+
+      // Smile / Mouth
+      const mouthMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.32, 0.11, 0.06),
+        new THREE.MeshBasicMaterial({ color: 0xe11d48 })
+      );
+      mouthMesh.position.set(0, 1.98, 0.44);
+      hostGroup.add(mouthMesh);
+
+      // Arms
+      leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.05, 0.36), skinMat);
+      leftArm.position.set(-0.76, 1.15, 0);
+      rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.05, 0.36), skinMat);
+      rightArm.position.set(0.76, 1.15, 0);
+      hostGroup.add(leftArm, rightArm);
+
+      // Legs
+      leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.95, 0.45), pantsMat);
+      leftLeg.position.set(-0.28, 0.1, 0);
+      rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.95, 0.45), pantsMat);
+      rightLeg.position.set(0.28, 0.1, 0);
+      hostGroup.add(leftLeg, rightLeg);
+
+      scene.add(hostGroup);
+
+      // 3D Table in Foreground
+      const tableObj = STUDIO_TABLES.find((t) => t.id === gameState.activeTableId) || STUDIO_TABLES[0];
+      tableMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(3.2, 0.25, 1.5),
+        new THREE.MeshStandardMaterial({ color: tableObj.tableHex, roughness: 0.35 })
+      );
+      tableMesh.position.set(0, 0.95, 1.15);
+      scene.add(tableMesh);
+
+      // Dynamic 3D Food Prop on Table
+      foodPropMesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.45, 0.38, 0.26, 20),
+        new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 })
+      );
+      foodPropMesh.position.set(0, 1.2, 1.15);
+      scene.add(foodPropMesh);
+
+      applyStudioVisuals();
+
+      // Pointer drag for camera angle
+      const canvasEl = renderer.domElement;
+      canvasEl.addEventListener('mousedown', (e) => {
+        isOrbitDragging = true;
+        prevPointerX = e.clientX;
+      });
+      window.addEventListener('mouseup', () => {
+        isOrbitDragging = false;
+      });
+      window.addEventListener('mousemove', (e) => {
+        if (!isOrbitDragging) return;
+        const dx = e.clientX - prevPointerX;
+        prevPointerX = e.clientX;
+        cameraYaw -= dx * 0.008;
+        cameraYaw = Math.max(-0.85, Math.min(0.85, cameraYaw));
+      });
+
+      window.addEventListener('resize', handleResizeThree);
+      animateThree();
+    }
+
+    function handleResizeThree() {
+      const container = document.getElementById('threeContainer');
+      if (!container || !renderer || !camera) return;
+      const w = container.clientWidth || 640;
+      const h = container.clientHeight || 380;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+
+    function applyStudioVisuals() {
+      const tableObj = STUDIO_TABLES.find((t) => t.id === gameState.activeTableId) || STUDIO_TABLES[0];
+      if (scene) scene.background = new THREE.Color(tableObj.bgHex);
+      if (studioBgMesh) studioBgMesh.material.color.setHex(tableObj.bgHex);
+      if (tableMesh) tableMesh.material.color.setHex(tableObj.tableHex);
+      if (ringLightMesh) {
+        ringLightMesh.material.color.setHex(tableObj.accentHex);
+        ringLightMesh.material.emissive.setHex(tableObj.accentHex);
+      }
+      if (torsoMesh) {
+        const outfit = OUTFIT_COLORS[gameState.outfitIndex] || OUTFIT_COLORS[0];
+        torsoMesh.material.color.setHex(outfit.threeHex);
+      }
+      if (foodPropMesh) {
+        const dish = MEGA_MENU.find((m) => m.id === gameState.activeDishId) || MEGA_MENU[0];
+        const colorMap = {
+          pinoy: 0xd97706,
+          fastfood: 0xf59e0b,
+          espana: 0xef4444,
+          desserts: 0xf472b6,
+          drinks: 0x22d3ee
+        };
+        foodPropMesh.material.color.setHex(colorMap[dish.category] || 0xf59e0b);
+      }
+      const activeTableLabel = document.getElementById('activeTableNameLabel');
+      if (activeTableLabel) activeTableLabel.textContent = tableObj.name;
+    }
+
+    function spawnFloatingEffect(emoji = '💖', count = 6) {
+      const layer = document.getElementById('floatingParticlesLayer');
+      if (!layer) return;
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement('span');
+        el.textContent = emoji;
+        el.className = 'absolute text-xl sm:text-2xl pointer-events-none transition-all duration-1000';
+        const leftPct = 20 + Math.random() * 60;
+        const topPct = 35 + Math.random() * 40;
+        el.style.left = `${leftPct}%`;
+        el.style.top = `${topPct}%`;
+        el.style.opacity = '1';
+        layer.appendChild(el);
+        requestAnimationFrame(() => {
+          el.style.transform = `translateY(-65px) scale(1.25) rotate(${(Math.random() - 0.5) * 35}deg)`;
+          el.style.opacity = '0';
+        });
+        setTimeout(() => el.remove(), 1050);
+      }
+    }
+
+    function triggerScreenShake() {
+      const card = document.getElementById('streamStageCard');
+      if (!card) return;
+      card.classList.remove('screen-shake');
+      void card.offsetWidth;
+      card.classList.add('screen-shake');
+    }
+
+    function animateThree() {
+      requestAnimationFrame(animateThree);
+      if (!renderer || !scene || !camera) return;
+
+      hostAnimPhase += 0.08;
+      if (hostGroup) {
+        hostGroup.position.y = Math.sin(hostAnimPhase) * 0.05;
+      }
+      if (headMesh) {
+        headMesh.rotation.z = Math.sin(hostAnimPhase * 1.4) * 0.05;
+      }
+      if (rightArm) {
+        rightArm.rotation.x = Math.sin(hostAnimPhase * 2) * 0.25;
+      }
+      if (ringLightMesh) {
+        ringLightMesh.rotation.z += 0.01;
+      }
+
+      camera.position.x = Math.sin(cameraYaw) * 5.4;
+      camera.position.z = Math.cos(cameraYaw) * 5.4;
+      camera.lookAt(0, 1.35, 0);
+
+      renderer.render(scene, camera);
+    }
+
+    // =========================================================================
+    // 6. TOAST, MILESTONES, HUD & UI RENDERING
+    // =========================================================================
+    let toastTimer = null;
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      const text = document.getElementById('toastMessage');
+      if (!banner || !text) return;
+      text.textContent = msg;
+      banner.classList.remove('opacity-0', '-translate-y-3');
+      banner.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        banner.classList.add('opacity-0', '-translate-y-3');
+        banner.classList.remove('opacity-100', 'translate-y-0');
+      }, 2800);
+    }
+
+    function checkMilestones() {
+      MILESTONES.forEach((m) => {
+        if (gameState.careerScore >= m.pts && !gameState.unlockedMilestones.includes(m.id)) {
+          gameState.unlockedMilestones.push(m.id);
+          gameState.coins += m.coinsBonus;
+          if (!gameState.unlockedRewards.includes(m.rewardLabel)) {
+            gameState.unlockedRewards.push(m.rewardLabel);
+          }
+          // Auto-unlock associated table if applicable
+          if (m.id === 'm2' && !gameState.unlockedTableIds.includes('espana_balcony')) {
+            gameState.unlockedTableIds.push('espana_balcony');
+          }
+          if (m.id === 'm4' && !gameState.unlockedTableIds.includes('pbb_living')) {
+            gameState.unlockedTableIds.push('pbb_living');
+          }
+          if (m.id === 'm5' && !gameState.unlockedTableIds.includes('penthouse_marble')) {
+            gameState.unlockedTableIds.push('penthouse_marble');
+          }
+          sfx.playSuperChat();
+          spawnFloatingEffect('🏆', 10);
+          showToast(`🏆 MILESTONE UNLOCKED: ${m.rewardLabel} (+₱${m.coinsBonus})`);
+          pushChatMessage('Nathan', 'Hype Train Conductor', 'text-amber-300 bg-amber-500/20', `MILESTONE UNLOCKED FOR ${gameState.hostName}!! ${m.rewardLabel} 🔥🏆`);
+        }
+      });
+    }
+
+    function renderHud() {
+      const hostName = gameState.hostName || 'Bastie';
+      document.getElementById('savedHostBadgeText').textContent = `Saved Forever • Host: ${hostName}`;
+      document.getElementById('lowerThirdHostName').textContent = hostName;
+      document.getElementById('careerScoreDisplay').textContent = gameState.careerScore.toLocaleString();
+      document.getElementById('coinsDisplay').textContent = `₱${gameState.coins.toLocaleString()}`;
+      document.getElementById('hypeDisplay').textContent = `${Math.min(100, gameState.hype)}%`;
+      document.getElementById('streakDisplay').textContent = gameState.streak;
+      document.getElementById('viewerCountDisplay').textContent = gameState.viewers.toLocaleString();
+      document.getElementById('itemsEatenCounter').textContent = `${gameState.itemsEatenIds.length} / 300`;
+      document.getElementById('simpsDefendedCount').textContent = gameState.simpsDefended;
+
+      const dish = MEGA_MENU.find((d) => d.id === gameState.activeDishId) || MEGA_MENU[0];
+      document.getElementById('activeDishLabel').textContent = `${dish.emoji} ${dish.name}`;
+
+      const glowCard = document.getElementById('streamStageCard');
+      if (glowCard) {
+        glowCard.classList.toggle('hype-max', gameState.hype >= 85);
+      }
+
+      // Next Milestone Bar
+      const nextM = MILESTONES.find((m) => gameState.careerScore < m.pts) || MILESTONES[MILESTONES.length - 1];
+      const prevPts = MILESTONES[MILESTONES.indexOf(nextM) - 1]?.pts || 0;
+      const span = Math.max(1, nextM.pts - prevPts);
+      const pct = Math.min(100, Math.max(0, Math.round(((gameState.careerScore - prevPts) / span) * 100)));
+
+      document.getElementById('nextMilestoneTitle').textContent = `${nextM.title} (${nextM.pts.toLocaleString()} pts)`;
+      document.getElementById('milestoneProgressText').textContent = `${gameState.careerScore.toLocaleString()} / ${nextM.pts.toLocaleString()} pts`;
+      document.getElementById('milestoneProgressBar').style.width = `${pct}%`;
+
+      // Unlocked rewards strip
+      const strip = document.getElementById('unlockedRewardsStrip');
+      if (strip) {
+        strip.innerHTML = gameState.unlockedRewards
+          .map(
+            (r) =>
+              `<span class="px-2.5 py-1 rounded-xl bg-purple-500/20 border border-purple-400/35 text-purple-200 font-semibold">${r}</span>`
+          )
+          .join('');
+      }
+
+      renderMilestonesList();
+      renderStudioControls();
+    }
+
+    function renderMilestonesList() {
+      const container = document.getElementById('milestonesList');
+      if (!container) return;
+      container.innerHTML = MILESTONES.map((m) => {
+        const done = gameState.unlockedMilestones.includes(m.id);
+        return `
+          <div class="flex items-center justify-between gap-2 p-2.5 rounded-2xl ${
+            done ? 'bg-emerald-950/50 border border-emerald-400/40' : 'bg-slate-950/70 border border-white/10'
+          }">
+            <div>
+              <div class="font-bold ${done ? 'text-emerald-300' : 'text-white'}">
+                ${done ? '✅' : '🔒'} ${m.title}
+              </div>
+              <div class="text-[11px] text-slate-400">Reward: ${m.rewardLabel} • +₱${m.coinsBonus}</div>
+            </div>
+            <span class="px-2.5 py-1 rounded-xl font-display font-bold text-xs ${
+              done ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+            }">${m.pts.toLocaleString()} pts</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderStudioControls() {
+      const tableGrid = document.getElementById('tableSelectorGrid');
+      if (tableGrid) {
+        tableGrid.innerHTML = STUDIO_TABLES.map((t) => {
+          const isUnlocked = gameState.unlockedTableIds.includes(t.id);
+          const isSelected = gameState.activeTableId === t.id;
+          return `
+            <button
+              type="button"
+              data-table-id="${t.id}"
+              class="table-select-btn text-left p-2.5 rounded-2xl border transition ${
+                isSelected
+                  ? 'bg-pink-500/25 border-pink-400 text-white'
+                  : 'bg-slate-950/70 border-white/10 text-slate-300 hover:border-purple-400/50'
+              }"
+            >
+              <div class="flex items-center justify-between gap-1">
+                <span class="font-display font-bold text-xs">${t.name}</span>
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                  isUnlocked ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                }">${isUnlocked ? 'Active/Ready' : `₱${t.cost}`}</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-0.5">${t.desc}</div>
+            </button>
+          `;
+        }).join('');
+      }
+
+      const outfitWrap = document.getElementById('outfitColorButtons');
+      if (outfitWrap) {
+        outfitWrap.innerHTML = OUTFIT_COLORS.map((o, idx) => {
+          const active = gameState.outfitIndex === idx;
+          return `
+            <button
+              type="button"
+              data-outfit-idx="${idx}"
+              class="outfit-btn px-2.5 py-1 rounded-xl text-[11px] font-bold border ${
+                active ? 'border-white scale-105' : 'border-white/15 opacity-80'
+              }"
+              style="background:${o.hex}; color:#0f172a;"
+            >${o.name}</button>
+          `;
+        }).join('');
+      }
+
+      const gearWrap = document.getElementById('activeGearBadges');
+      if (gearWrap) {
+        gearWrap.innerHTML = gameState.unlockedRewards
+          .slice(0, 4)
+          .map(
+            (g) =>
+              `<span class="px-2 py-0.5 rounded-lg bg-slate-800 border border-white/10 text-[10px] text-cyan-200">${g}</span>`
+          )
+          .join('');
+      }
+    }
+
+    // =========================================================================
+    // 7. 300-ITEM MEGA MENU RENDERING & ORDERING
+    // =========================================================================
+    let activeMenuCategory = 'all';
+    let menuSearchQuery = '';
+
+    function renderMenuCategoryTabs() {
+      const wrap = document.getElementById('menuCategoryTabs');
+      if (!wrap) return;
+      wrap.innerHTML = MENU_CATEGORIES.map((cat) => {
+        const active = activeMenuCategory === cat.id;
+        return `
+          <button
+            type="button"
+            data-cat="${cat.id}"
+            class="menu-cat-btn px-2.5 py-1.5 rounded-xl text-xs font-bold transition ${
+              active
+                ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow'
+                : 'bg-slate-800/90 text-slate-300 hover:bg-slate-800'
+            }"
+          >${cat.label}</button>
+        `;
+      }).join('');
+    }
+
+    function renderMegaMenuList() {
+      const list = document.getElementById('menuItemsList');
+      if (!list) return;
+      const q = menuSearchQuery.trim().toLowerCase();
+      const filtered = MEGA_MENU.filter((item) => {
+        const catOk = activeMenuCategory === 'all' || item.category === activeMenuCategory;
+        const qOk = !q || item.name.toLowerCase().includes(q) || (item.tag && item.tag.toLowerCase().includes(q));
+        return catOk && qOk;
+      });
+
+      document.getElementById('menuCountBadge').textContent = `${filtered.length} / 300 Items`;
+
+      list.innerHTML = filtered
+        .slice(0, 120)
+        .map((item) => {
+          const eaten = gameState.itemsEatenIds.includes(item.id);
+          return `
+            <div class="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-900/95 border ${
+              eaten ? 'border-emerald-500/35' : 'border-white/10'
+            } hover:border-pink-400/50 transition">
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-lg">${item.emoji}</span>
+                  <span class="font-display font-bold text-xs sm:text-sm text-white truncate">#${item.id} ${item.name}</span>
+                  ${eaten ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">Eaten</span>' : ''}
+                </div>
+                <div class="text-[11px] text-slate-400 flex flex-wrap gap-2 mt-0.5">
+                  <span class="text-amber-300 font-semibold">₱${item.price}</span>
+                  <span class="text-cyan-300">+${item.scoreGain} pts</span>
+                  <span class="text-pink-300">+${item.hypeGain}% hype</span>
+                  ${item.tag ? `<span class="text-purple-300">• ${item.tag}</span>` : ''}
+                </div>
+              </div>
+              <button
+                type="button"
+                data-order-id="${item.id}"
+                class="order-dish-btn rbx-btn px-3 py-1.5 bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs whitespace-nowrap"
+              >
+                ${item.miniGame ? '🎮 Order & Play' : '🥢 Order & Eat'}
+              </button>
+            </div>
+          `;
+        })
+        .join('');
+    }
+
+    function orderAndEatDish(itemId) {
+      const item = MEGA_MENU.find((d) => d.id === itemId);
+      if (!item) return;
+
+      gameState.activeDishId = item.id;
+      if (!gameState.itemsEatenIds.includes(item.id)) {
+        gameState.itemsEatenIds.push(item.id);
+        gameState.careerScore += 60; // First-time dish bonus
+      }
+
+      const hypeBoost = item.name.toLowerCase().includes('kare-kare') ? Math.round(item.hypeGain * 1.5) : item.hypeGain;
+      gameState.careerScore += item.scoreGain;
+      gameState.hype = Math.min(100, gameState.hype + hypeBoost);
+      gameState.viewers += Math.floor(25 + hypeBoost * 3);
+      gameState.streak += 1;
+
+      sfx.playCrunch();
+      spawnFloatingEffect(item.emoji, 6);
+      applyStudioVisuals();
+      checkMilestones();
+      saveGameState();
+      renderMegaMenuList();
+
+      const host = gameState.hostName || 'Bastie';
+      showToast(`🥢 ${host} ordered ${item.name}! +${item.scoreGain} pts`);
+      pushChatMessage(
+        'Gehlee',
+        'Wholesome Hype',
+        'text-pink-300 bg-pink-500/20',
+        `Let's go ${host}!! ${item.name} looks so good!! 💖`
+      );
+
+      if (item.miniGame) {
+        openMiniGame(item.miniGame);
+      }
+    }
+
+    function takeBiteAction() {
+      const dish = MEGA_MENU.find((d) => d.id === gameState.activeDishId) || MEGA_MENU[0];
+      const gain = Math.round(dish.scoreGain * 0.45) + 25;
+      gameState.careerScore += gain;
+      gameState.coins += 15;
+      gameState.hype = Math.min(100, gameState.hype + 6);
+      gameState.viewers += 18;
+      sfx.playCrunch();
+      spawnFloatingEffect('😋', 5);
+      checkMilestones();
+      saveGameState();
+      pushChatMessage(
+        'Primo',
+        'Analytical Tier-Lister',
+        'text-indigo-300 bg-indigo-500/20',
+        `${dish.name} is S-tier, good choice ${gameState.hostName || 'Bastie'} 🧠 (+${gain} pts)`
+      );
+    }
+
+    // =========================================================================
+    // 8. CANON PBB HOUSEMATE CHAT & STRANGER SIMP WAR
+    // =========================================================================
+    function pushChatMessage(sender, role, badgeClass, text, isSimp = false, isMikee = false) {
+      const feed = document.getElementById('chatFeed');
+      if (!feed) return;
+      const host = gameState.hostName || 'Bastie';
+      const dish = MEGA_MENU.find((d) => d.id === gameState.activeDishId) || MEGA_MENU[0];
+      const formatted = text.replace(/\{host\}/g, host).replace(/\{dish\}/g, dish.name);
+
+      const row = document.createElement('div');
+      row.className = `p-2.5 rounded-2xl border text-xs flex items-start justify-between gap-2 pop-in ${
+        isSimp
+          ? 'bg-rose-950/55 border-rose-400/50 text-rose-100'
+          : isMikee
+          ? 'bg-purple-950/60 border-purple-400/40 text-purple-100'
+          : 'bg-slate-900/90 border-white/10 text-slate-100'
+      }`;
+
+      row.innerHTML = `
+        <div>
+          <div class="flex items-center gap-1.5 mb-0.5">
+            <span class="font-bold text-white">${sender}</span>
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${badgeClass}">${role}</span>
+          </div>
+          <p class="leading-snug">${formatted}</p>
+        </div>
+        ${
+          isSimp
+            ? `<button type="button" class="defend-single-simp-btn shrink-0 px-2.5 py-1 rounded-xl bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold text-[11px]">🤺 Fight!</button>`
+            : ''
+        }
+      `;
+
+      if (isSimp) {
+        const btn = row.querySelector('.defend-single-simp-btn');
+        if (btn) {
+          btn.addEventListener('click', () => {
+            defendAgainstSimps();
+            row.remove();
+          });
+        }
+      }
+
+      feed.appendChild(row);
+      while (feed.children.length > 45) {
+        feed.removeChild(feed.firstElementChild);
+      }
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    function defendAgainstSimps() {
+      const host = gameState.hostName || 'Bastie';
+      const replies = [
+        `Huy Tigilan niyo si ${host} akin lang yan! 🤺`,
+        `Get a job stranger he's eating!! 🤺`,
+        `Back off simps, ${host} is in Mukbaby mode!! 🤺`
+      ];
+      const chosen = replies[gameState.simpsDefended % replies.length];
+      gameState.simpsDefended += 1;
+      gameState.careerScore += 95;
+      gameState.coins += 50;
+      gameState.hype = Math.min(100, gameState.hype + 12);
+      gameState.viewers += 45;
+
+      sfx.playPop();
+      spawnFloatingEffect('🤺', 6);
+      checkMilestones();
+      saveGameState();
+
+      pushChatMessage(
+        `${host} (Mod Defense)`,
+        'Simp Protector',
+        'text-emerald-300 bg-emerald-500/20',
+        chosen
+      );
+      showToast(`🤺 Simp defeated! +95 pts & +₱50`);
+    }
+
+    function banMikeeAction() {
+      gameState.mikeeBannedCount += 1;
+      gameState.careerScore += 110;
+      gameState.coins += 65;
+      gameState.hype = Math.min(100, gameState.hype + 15);
+      sfx.playChime();
+      spawnFloatingEffect('🚫', 5);
+      checkMilestones();
+      saveGameState();
+      pushChatMessage(
+        'Nathan',
+        'Hype Train Conductor',
+        'text-amber-300 bg-amber-500/20',
+        `Mikee got timed out!! Chat is 100% pure Mukbaby energy now 🔥`
+      );
+      showToast(`🚫 Mikee banned from chat! +110 pts`);
+    }
+
+    function startLiveChatLoop() {
+      // Seed initial messages
+      pushChatMessage('Gehlee', 'Wholesome Hype', 'text-pink-300 bg-pink-500/20', "Let's go {host}!! So proud of this mukbang! 💖");
+      pushChatMessage('Jeo', 'Bro Roast & Review', 'text-cyan-300 bg-cyan-500/20', 'Bro save some crispy pata for me wth 😂');
+      pushChatMessage('Shea', 'Gentle Support', 'text-emerald-300 bg-emerald-500/20', 'Take a sip of water {host}, grabe yung anghang nung bicol express! 💧');
+
+      setInterval(() => {
+        if (document.getElementById('loadingScreen') && !document.getElementById('loadingScreen').classList.contains('hidden')) {
+          return;
+        }
+        const roll = Math.random();
+        if (roll < 0.28) {
+          const line = STRANGER_SIMP_LINES[Math.floor(Math.random() * STRANGER_SIMP_LINES.length)];
+          pushChatMessage('Stranger Simp', 'Simp Flood', 'text-rose-300 bg-rose-500/25', line, true, false);
+        } else {
+          const hm = PBB_HOUSEMATES[Math.floor(Math.random() * PBB_HOUSEMATES.length)];
+          const line = hm.lines[Math.floor(Math.random() * hm.lines.length)];
+          pushChatMessage(hm.name, hm.role, hm.badgeColor, line, false, !!hm.isMikee);
+        }
+      }, 3600);
+    }
+
+    // =========================================================================
+    // 9. INTERACTIVE PROMPTS (BIRTHDAY RATING & "DO YOU LOVE KEI?")
+    // =========================================================================
+    function openBirthdayPrompt() {
+      const modal = document.getElementById('promptModal');
+      const badge = document.getElementById('promptBadge');
+      const title = document.getElementById('promptTitle');
+      const desc = document.getElementById('promptDescription');
+      const opts = document.getElementById('promptOptions');
+      const resBanner = document.getElementById('promptResultBanner');
+      if (!modal) return;
+
+      resBanner.classList.add('hidden');
+      badge.textContent = '🎂 Birthday Rating Prompt';
+      title.textContent = `${gameState.hostName || 'Bastie'}! Rate Your Birthday (1–10)`;
+      desc.textContent =
+        'On a scale of 1-10, how would you rate your birthday? <5 triggers comfort gifts & sympathy ice cream; 10 triggers a Golden Birthday Cake & ₱5,000 Super Chat shower!';
+
+      opts.innerHTML = Array.from({ length: 10 }, (_, i) => i + 1)
+        .map(
+          (num) => `
+            <button type="button" data-bday-score="${num}" class="bday-choice-btn rbx-btn py-2 px-3 bg-slate-800 hover:bg-pink-600 text-white text-xs sm:text-sm">
+              ${num}/10 ${num === 10 ? '👑' : num < 5 ? '🧸' : '🎉'}
+            </button>
+          `
+        )
+        .join('');
+
+      modal.classList.remove('hidden');
+    }
+
+    function handleBirthdayChoice(score) {
+      const resBanner = document.getElementById('promptResultBanner');
+      const host = gameState.hostName || 'Bastie';
+      gameState.birthdayPromptDone = true;
+
+      if (score < 5) {
+        gameState.careerScore += 220;
+        gameState.coins += 600;
+        gameState.hype = Math.min(100, gameState.hype + 18);
+        const reward = 'Teddy Bear Plush & Sympathy Ice Cream 🧸🍨';
+        if (!gameState.unlockedRewards.includes(reward)) gameState.unlockedRewards.push(reward);
+        sfx.playChime();
+        spawnFloatingEffect('🧸', 7);
+        resBanner.textContent = `Chat felt sad for ${host} (${score}/10) and sent comfort gifts: ${reward} (+220 pts, +₱600)`;
+        pushChatMessage('Shea', 'Gentle Support', 'text-emerald-300 bg-emerald-500/20', `Aww ${host}, sending comfort Teddy Bear Plush & Sympathy Ice Cream! 🧸🍨`);
+      } else if (score === 10) {
+        gameState.careerScore += 650;
+        gameState.coins += 5000;
+        gameState.hype = 100;
+        gameState.viewers += 1200;
+        const reward = 'Golden Birthday Cake & ₱5,000 Super Chat Shower 🎂👑';
+        if (!gameState.unlockedRewards.includes(reward)) gameState.unlockedRewards.push(reward);
+        sfx.playSuperChat();
+        spawnFloatingEffect('🎂', 12);
+        resBanner.textContent = `10/10 HYPE EXPLOSION!! Unlocked ${reward} (+650 pts, +₱5,000 Super Chat!)`;
+        pushChatMessage('Nathan', 'Hype Train Conductor', 'text-amber-300 bg-amber-500/20', `10/10 FOR ${host}!! GOLDEN BIRTHDAY CAKE & ₱5,000 SUPER CHAT SHOWER!! 🎂🔥`);
+      } else {
+        gameState.careerScore += 320;
+        gameState.coins += 900;
+        gameState.hype = Math.min(100, gameState.hype + 22);
+        const reward = 'Birthday Party Confetti Pack 🎊';
+        if (!gameState.unlockedRewards.includes(reward)) gameState.unlockedRewards.push(reward);
+        sfx.playChime();
+        spawnFloatingEffect('🎉', 8);
+        resBanner.textContent = `Awesome ${score}/10 rating! Unlocked ${reward} (+320 pts, +₱900)`;
+        pushChatMessage('Gehlee', 'Wholesome Hype', 'text-pink-300 bg-pink-500/20', `Happy birthday vibes ${host}!! ${score}/10 icon!! 💖`);
+      }
+
+      resBanner.classList.remove('hidden');
+      checkMilestones();
+      saveGameState();
+    }
+
+    function openKeiPrompt() {
+      const modal = document.getElementById('promptModal');
+      const badge = document.getElementById('promptBadge');
+      const title = document.getElementById('promptTitle');
+      const desc = document.getElementById('promptDescription');
+      const opts = document.getElementById('promptOptions');
+      const resBanner = document.getElementById('promptResultBanner');
+      if (!modal) return;
+
+      resBanner.classList.add('hidden');
+      badge.textContent = '💖 Relationship Prompt';
+      title.textContent = `Do you love Kei, ${gameState.hostName || 'Bastie'}?`;
+      desc.textContent = 'Chat is waiting with floating hearts... choose your answer!';
+
+      opts.innerHTML = `
+        <button type="button" data-kei-ans="yes" class="kei-choice-btn rbx-btn py-3 px-4 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-sm">
+          💖 Yes
+        </button>
+        <button type="button" data-kei-ans="obviously" class="kei-choice-btn rbx-btn py-3 px-4 bg-gradient-to-r from-purple-500 to-pink-600 text-white text-sm">
+          ✨ Obviously Yes
+        </button>
+        <button type="button" disabled class="py-3 px-4 rounded-2xl bg-slate-800/60 border border-white/10 text-slate-500 text-sm font-bold cursor-not-allowed">
+          🔒 No [Locked]
+        </button>
+      `;
+
+      modal.classList.remove('hidden');
+    }
+
+    function handleKeiChoice() {
+      const resBanner = document.getElementById('promptResultBanner');
+      const host = gameState.hostName || 'Bastie';
+      gameState.keiPromptDone = true;
+      gameState.careerScore += 550;
+      gameState.coins += 1200;
+      gameState.hype = 100;
+
+      const legendaries = [
+        'Matching Couple Hoodies 👕💖',
+        'Golden Chopsticks 🥢✨',
+        'Kei VIP Couple Badge 🏅'
+      ];
+      legendaries.forEach((r) => {
+        if (!gameState.unlockedRewards.includes(r)) {
+          gameState.unlockedRewards.push(r);
+        }
+      });
+
+      sfx.playSuperChat();
+      spawnFloatingEffect('💖', 14);
+      resBanner.textContent = `Floating hearts shower! Unlocked: Matching Couple Hoodies, Golden Chopsticks & VIP Badge (+550 pts, +₱1,200)`;
+      pushChatMessage('Gehlee', 'Wholesome Hype', 'text-pink-300 bg-pink-500/20', `AWWW ${host} & KEI!! Couple hoodies & Golden Chopsticks unlocked!! 💖✨`);
+      checkMilestones();
+      saveGameState();
+    }
+
+    // =========================================================================
+    // 10. FIVE DISTINCT MINI-GAMES
+    // =========================================================================
+    let activeMiniGameCleanup = null;
+
+    function openMiniGame(gameKey) {
+      const modal = document.getElementById('minigameModal');
+      const title = document.getElementById('minigameTitle');
+      const desc = document.getElementById('minigameDesc');
+      const arena = document.getElementById('minigameArena');
+      const highDisp = document.getElementById('minigameHighScoreDisplay');
+      const statusDisp = document.getElementById('minigameStatusText');
+
+      if (activeMiniGameCleanup) {
+        activeMiniGameCleanup();
+        activeMiniGameCleanup = null;
+      }
+
+      highDisp.textContent = gameState.miniGameHighScores[gameKey] || 0;
+      statusDisp.textContent = 'Play to earn bonus Score & Coins!';
+      arena.innerHTML = '';
+      modal.classList.remove('hidden');
+
+      const recordMiniScore = (scoreEarned, coinsEarned) => {
+        gameState.careerScore += scoreEarned;
+        gameState.coins += coinsEarned;
+        gameState.hype = Math.min(100, gameState.hype + 15);
+        const prevBest = gameState.miniGameHighScores[gameKey] || 0;
+        if (scoreEarned > prevBest) {
+          gameState.miniGameHighScores[gameKey] = scoreEarned;
+        }
+        highDisp.textContent = gameState.miniGameHighScores[gameKey];
+        statusDisp.textContent = `Completed! +${scoreEarned} pts & +₱${coinsEarned}`;
+        sfx.playChime();
+        spawnFloatingEffect('🌟', 7);
+        checkMilestones();
+        saveGameState();
+      };
+
+      if (gameKey === 'bagoong') {
+        title.textContent = '🥄 Bagoong Drizzle Balance (Kare-Kare)';
+        desc.textContent = 'Move your pointer across the bar to drizzle bagoong onto the oxtail target zone without spilling!';
+        let balance = 50;
+        let progress = 0;
+        let interval = null;
+
+        arena.innerHTML = `
+          <div class="w-full space-y-4 text-center">
+            <div class="text-sm font-bold text-amber-300">Drizzle Progress: <span id="bagProg">0</span>%</div>
+            <div id="bagTrack" class="relative w-full h-12 rounded-2xl bg-slate-900 border-2 border-amber-400/50 overflow-hidden cursor-ew-resize">
+              <div class="absolute inset-y-0 left-[30%] w-[40%] bg-emerald-500/25 border-x border-emerald-400/50"></div>
+              <div id="bagCursor" class="absolute top-1 bottom-1 w-8 rounded-xl bg-amber-400 shadow-lg" style="left: 46%;"></div>
+            </div>
+            <p class="text-xs text-slate-400">Hover/drag inside the box to keep the bagoong stream centered!</p>
+          </div>
+        `;
+
+        const track = document.getElementById('bagTrack');
+        const cursor = document.getElementById('bagCursor');
+        const progEl = document.getElementById('bagProg');
+
+        const moveHandler = (clientX) => {
+          const rect = track.getBoundingClientRect();
+          const rel = ((clientX - rect.left) / rect.width) * 100;
+          balance = Math.max(0, Math.min(92, rel));
+          cursor.style.left = `${balance}%`;
+        };
+        track.addEventListener('mousemove', (e) => moveHandler(e.clientX));
+        track.addEventListener('touchmove', (e) => {
+          if (e.touches[0]) moveHandler(e.touches[0].clientX);
+        });
+
+        interval = setInterval(() => {
+          if (balance >= 28 && balance <= 64) {
+            progress = Math.min(100, progress + 9);
+            sfx.playPop();
+          } else {
+            progress = Math.max(0, progress - 4);
+          }
+          progEl.textContent = progress;
+          if (progress >= 100) {
+            clearInterval(interval);
+            recordMiniScore(260, 180);
+          }
+        }, 240);
+
+        activeMiniGameCleanup = () => clearInterval(interval);
+      } else if (gameKey === 'happymeal') {
+        title.textContent = '🎁 Happy Meal Toy Unboxing';
+        desc.textContent = 'Tap rapidly to rip open the foil pack and collect a rare 3D Roblox toy!';
+        let taps = 0;
+        const needed = 18;
+        arena.innerHTML = `
+          <div class="text-center space-y-3">
+            <div class="text-5xl">🎁</div>
+            <div class="font-display text-lg font-bold text-amber-300">Rip Progress: <span id="hmProg">0</span>%</div>
+            <button id="hmTapBtn" class="rbx-btn px-6 py-3 bg-gradient-to-r from-amber-400 to-pink-500 text-slate-950 text-base">
+              💥 RIP FOIL PACK!
+            </button>
+          </div>
+        `;
+        const btn = document.getElementById('hmTapBtn');
+        const prog = document.getElementById('hmProg');
+        btn.addEventListener('click', () => {
+          taps += 1;
+          sfx.playPop();
+          const pct = Math.min(100, Math.round((taps / needed) * 100));
+          prog.textContent = pct;
+          if (taps >= needed) {
+            const toys = ['Roblox Bloxy Burger Toy 🍔', 'Neon Dominius Hat 👑', 'Golden Spatula Keychain 🥄'];
+            const picked = toys[Math.floor(Math.random() * toys.length)];
+            if (!gameState.unlockedRewards.includes(picked)) gameState.unlockedRewards.push(picked);
+            btn.disabled = true;
+            btn.textContent = `Unboxed: ${picked}`;
+            recordMiniScore(240, 200);
+          }
+        });
+      } else if (gameKey === 'spicy') {
+        title.textContent = '🌶️ Siling Labuyo Tanking Mash';
+        desc.textContent = 'Rapid-tap to survive ultra-spicy street food without sweating through the ring light!';
+        let heat = 60;
+        let survived = 0;
+        const interval = setInterval(() => {
+          heat = Math.min(100, heat + 7);
+          survived += 1;
+          const bar = document.getElementById('spicyBar');
+          const sec = document.getElementById('spicySec');
+          if (bar) bar.style.width = `${heat}%`;
+          if (sec) sec.textContent = survived;
+          if (heat >= 100) {
+            clearInterval(interval);
+            triggerScreenShake();
+            sfx.playBuzz();
+            statusDisp.textContent = 'Too spicy! Grab water or retry!';
+          } else if (survived >= 12) {
+            clearInterval(interval);
+            recordMiniScore(310, 220);
+          }
+        }, 450);
+
+        arena.innerHTML = `
+          <div class="w-full text-center space-y-3">
+            <div class="text-sm font-bold text-red-300">Survived: <span id="spicySec">0</span>s / 12s</div>
+            <div class="w-full h-4 rounded-full bg-slate-800 overflow-hidden">
+              <div id="spicyBar" class="h-full bg-gradient-to-r from-amber-400 to-rose-600" style="width: 60%;"></div>
+            </div>
+            <button id="spicyMashBtn" class="rbx-btn px-6 py-3 bg-gradient-to-r from-red-500 to-amber-500 text-white text-base">
+              🧊 TANK THE SPICE!
+            </button>
+          </div>
+        `;
+        document.getElementById('spicyMashBtn').addEventListener('click', () => {
+          heat = Math.max(15, heat - 14);
+          sfx.playCrunch();
+          const bar = document.getElementById('spicyBar');
+          if (bar) bar.style.width = `${heat}%`;
+        });
+        activeMiniGameCleanup = () => clearInterval(interval);
+      } else if (gameKey === 'boba') {
+        title.textContent = '🧋 Boba Pearl Catching Arcade';
+        desc.textContent = 'Slide the cup left/right to catch falling brown sugar boba pearls!';
+        let cupPos = 45;
+        let caught = 0;
+        let pearlTop = 10;
+        let pearlLeft = 45;
+
+        arena.innerHTML = `
+          <div class="w-full space-y-2 text-center">
+            <div class="text-xs font-bold text-cyan-300">Pearls Caught: <span id="bobaCaught">0</span> / 6</div>
+            <div id="bobaField" class="relative w-full h-40 rounded-2xl bg-slate-900 border border-cyan-400/40 overflow-hidden">
+              <div id="bobaPearl" class="absolute text-2xl" style="top: 10%; left: 45%;">⚫</div>
+              <div id="bobaCup" class="absolute bottom-2 text-3xl" style="left: 45%;">🧋</div>
+            </div>
+            <div class="flex justify-center gap-3">
+              <button id="bobaLeft" class="rbx-btn px-4 py-1.5 bg-slate-800 text-white text-xs">⬅️ Left</button>
+              <button id="bobaRight" class="rbx-btn px-4 py-1.5 bg-slate-800 text-white text-xs">Right ➡️</button>
+            </div>
+          </div>
+        `;
+
+        const moveCup = (delta) => {
+          cupPos = Math.max(5, Math.min(88, cupPos + delta));
+          const cup = document.getElementById('bobaCup');
+          if (cup) cup.style.left = `${cupPos}%`;
+        };
+        document.getElementById('bobaLeft').addEventListener('click', () => moveCup(-14));
+        document.getElementById('bobaRight').addEventListener('click', () => moveCup(14));
+
+        const loop = setInterval(() => {
+          pearlTop += 11;
+          const pearl = document.getElementById('bobaPearl');
+          if (pearl) {
+            pearl.style.top = `${pearlTop}%`;
+            pearl.style.left = `${pearlLeft}%`;
+          }
+          if (pearlTop >= 78) {
+            if (Math.abs(pearlLeft - cupPos) <= 18) {
+              caught += 1;
+              sfx.playPop();
+              const cEl = document.getElementById('bobaCaught');
+              if (cEl) cEl.textContent = caught;
+            }
+            pearlTop = 8;
+            pearlLeft = 10 + Math.floor(Math.random() * 78);
+            if (caught >= 6) {
+              clearInterval(loop);
+              recordMiniScore(270, 210);
+            }
+          }
+        }, 220);
+
+        activeMiniGameCleanup = () => clearInterval(loop);
+      } else {
+        title.textContent = '🚫 Mikee Chat-Ban Speedrun';
+        desc.textContent = 'Fast-click Mikee’s toxic comments before she mods the chat!';
+        let banned = 0;
+        const goal = 5;
+
+        arena.innerHTML = `
+          <div class="w-full text-center space-y-3">
+            <div class="text-xs font-bold text-purple-300">Mikee Comments Banned: <span id="mikeeBanProg">0</span> / ${goal}</div>
+            <button id="mikeeTargetBtn" class="rbx-btn px-5 py-4 bg-gradient-to-r from-purple-600 to-rose-600 text-white text-xs sm:text-sm max-w-full">
+              🙄 Mikee: "Let me mod this chat!" — CLICK TO BAN!
+            </button>
+          </div>
+        `;
+
+        const targetBtn = document.getElementById('mikeeTargetBtn');
+        targetBtn.addEventListener('click', () => {
+          banned += 1;
+          sfx.playPop();
+          const pEl = document.getElementById('mikeeBanProg');
+          if (pEl) pEl.textContent = banned;
+          targetBtn.style.transform = `translate(${(Math.random() - 0.5) * 30}px, ${(Math.random() - 0.5) * 18}px)`;
+          if (banned >= goal) {
+            recordMiniScore(280, 190);
+          }
+        });
+      }
+    }
+
+    // =========================================================================
+    // 11. INTRO LOADING SCREEN & HOST PROMPT FLOW
+    // =========================================================================
+    function initLoadingAndHostFlow() {
+      const loadingScreen = document.getElementById('loadingScreen');
+      const barFill = document.getElementById('loadingBarFill');
+      const percentEl = document.getElementById('loadingPercent');
+      const tipEl = document.getElementById('loadingTipText');
+      const tapBtn = document.getElementById('startupTapBtn');
+
+      let progress = 4;
+      let tipIdx = 0;
+
+      const tipTimer = setInterval(() => {
+        tipIdx = (tipIdx + 1) % LOADING_TIPS.length;
+        if (tipEl) tipEl.textContent = LOADING_TIPS[tipIdx];
+      }, 1700);
+
+      const progTimer = setInterval(() => {
+        progress = Math.min(100, progress + 12);
+        if (barFill) barFill.style.width = `${progress}%`;
+        if (percentEl) percentEl.textContent = `${progress}%`;
+        if (progress >= 100) {
+          clearInterval(progTimer);
+        }
+      }, 220);
+
+      const finishLoading = () => {
+        clearInterval(tipTimer);
+        clearInterval(progTimer);
+        if (barFill) barFill.style.width = '100%';
+        if (percentEl) percentEl.textContent = '100%';
+        sfx.playChime();
+        loadingScreen.classList.add('hidden');
+
+        // Ask "Who is the mukbang host?" on first launch when no saved host exists
+        if (!gameState.hostLocked || !gameState.hostName) {
+          document.getElementById('hostPromptModal').classList.remove('hidden');
+          document.getElementById('hostNameInput').focus();
+        } else {
+          showToast(`Welcome back, Host ${gameState.hostName}! Progress saved forever.`);
+        }
+      };
+
+      tapBtn.addEventListener('click', finishLoading);
+      setTimeout(() => {
+        if (!loadingScreen.classList.contains('hidden')) {
+          finishLoading();
+        }
+      }, 2400);
+    }
+
+    // =========================================================================
+    // 12. EVENT LISTENERS & INITIALIZATION
+    // =========================================================================
+    function bindAllEvents() {
+      // First-time Host Prompt
+      document.querySelectorAll('.preset-host-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.getElementById('hostNameInput').value = btn.dataset.presetHost || 'Bastie';
+          sfx.playPop();
+        });
+      });
+
+      document.getElementById('saveHostForeverBtn').addEventListener('click', () => {
+        const val = document.getElementById('hostNameInput').value.trim() || 'Bastie';
+        gameState.hostName = val;
+        gameState.hostLocked = true;
+        if (!gameState.unlockedRewards.includes(`Host License: ${val} 🪪`)) {
+          gameState.unlockedRewards.push(`Host License: ${val} 🪪`);
+        }
+        saveGameState();
+        document.getElementById('hostPromptModal').classList.add('hidden');
+        sfx.playSuperChat();
+        spawnFloatingEffect('💖', 8);
+        showToast(`💾 Host "${val}" locked in & saved forever!`);
+        pushChatMessage('Gehlee', 'Wholesome Hype', 'text-pink-300 bg-pink-500/20', `Welcome to the live stream Host ${val}!! 💖`);
+      });
+
+      // Primary Stage Buttons
+      document.getElementById('takeBiteBtn').addEventListener('click', takeBiteAction);
+      document.getElementById('defendSimpsBtn').addEventListener('click', defendAgainstSimps);
+      document.getElementById('clearMikeeBtn').addEventListener('click', banMikeeAction);
+
+      document.getElementById('triggerPromptBtn').addEventListener('click', () => {
+        if (Math.random() < 0.5) {
+          openBirthdayPrompt();
+        } else {
+          openKeiPrompt();
+        }
+      });
+
+      document.getElementById('openBirthdayPromptBtn').addEventListener('click', openBirthdayPrompt);
+      document.getElementById('openKeiPromptBtn').addEventListener('click', openKeiPrompt);
+
+      document.getElementById('closePromptBtn').addEventListener('click', () => {
+        document.getElementById('promptModal').classList.add('hidden');
+      });
+
+      // Delegated Prompt Choices
+      document.getElementById('promptOptions').addEventListener('click', (e) => {
+        const bdayBtn = e.target.closest('.bday-choice-btn');
+        if (bdayBtn) {
+          handleBirthdayChoice(Number(bdayBtn.dataset.bdayScore));
+          return;
+        }
+        const keiBtn = e.target.closest('.kei-choice-btn');
+        if (keiBtn) {
+          handleKeiChoice();
+        }
+      });
+
+      // Mini-Games
+      document.getElementById('launchMinigameBtn').addEventListener('click', () => {
+        const keys = ['bagoong', 'happymeal', 'spicy', 'boba', 'mikee'];
+        openMiniGame(keys[Math.floor(Math.random() * keys.length)]);
+      });
+
+      document.querySelectorAll('.mg-quick-btn').forEach((btn) => {
+        btn.addEventListener('click', () => openMiniGame(btn.dataset.mg));
+      });
+
+      document.getElementById('closeMinigameBtn').addEventListener('click', () => {
+        if (activeMiniGameCleanup) {
+          activeMiniGameCleanup();
+          activeMiniGameCleanup = null;
+        }
+        document.getElementById('minigameModal').classList.add('hidden');
+      });
+
+      // Menu Search, Tabs & Order
+      document.getElementById('menuSearchInput').addEventListener('input', (e) => {
+        menuSearchQuery = e.target.value;
+        renderMegaMenuList();
+      });
+
+      document.getElementById('menuCategoryTabs').addEventListener('click', (e) => {
+        const tabBtn = e.target.closest('.menu-cat-btn');
+        if (!tabBtn) return;
+        activeMenuCategory = tabBtn.dataset.cat;
+        renderMenuCategoryTabs();
+        renderMegaMenuList();
+      });
+
+      document.getElementById('menuItemsList').addEventListener('click', (e) => {
+        const orderBtn = e.target.closest('.order-dish-btn');
+        if (!orderBtn) return;
+        orderAndEatDish(Number(orderBtn.dataset.orderId));
+      });
+
+      document.getElementById('orderRandomBtn').addEventListener('click', () => {
+        const randomItem = MEGA_MENU[Math.floor(Math.random() * MEGA_MENU.length)];
+        orderAndEatDish(randomItem.id);
+      });
+
+      // Studio Tables & Outfits
+      document.getElementById('tableSelectorGrid').addEventListener('click', (e) => {
+        const btn = e.target.closest('.table-select-btn');
+        if (!btn) return;
+        const tableId = btn.dataset.tableId;
+        const tableObj = STUDIO_TABLES.find((t) => t.id === tableId);
+        if (!tableObj) return;
+
+        if (!gameState.unlockedTableIds.includes(tableId)) {
+          if (gameState.coins < tableObj.cost) {
+            showToast(`Need ₱${tableObj.cost} to unlock ${tableObj.name}!`);
+            sfx.playBuzz();
+            return;
+          }
+          gameState.coins -= tableObj.cost;
+          gameState.unlockedTableIds.push(tableId);
+          sfx.playChime();
+        }
+        gameState.activeTableId = tableId;
+        applyStudioVisuals();
+        saveGameState();
+        showToast(`🏠 Switched 3D Table to ${tableObj.name}`);
+      });
+
+      document.getElementById('outfitColorButtons').addEventListener('click', (e) => {
+        const btn = e.target.closest('.outfit-btn');
+        if (!btn) return;
+        gameState.outfitIndex = Number(btn.dataset.outfitIdx);
+        applyStudioVisuals();
+        saveGameState();
+        sfx.playPop();
+      });
+
+      // Chat Reply Form
+      document.getElementById('chatReplyForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('chatReplyInput');
+        const txt = input.value.trim();
+        if (!txt) return;
+        pushChatMessage(gameState.hostName || 'Bastie', 'Live Host', 'text-pink-300 bg-pink-500/25', txt);
+        gameState.careerScore += 35;
+        gameState.hype = Math.min(100, gameState.hype + 5);
+        input.value = '';
+        sfx.playPop();
+        checkMilestones();
+        saveGameState();
+      });
+
+      // Audio Toggle
+      document.getElementById('audioToggleBtn').addEventListener('click', () => {
+        sfx.enabled = !sfx.enabled;
+        document.getElementById('audioToggleBtn').textContent = sfx.enabled ? '🔊 SFX ON' : '🔇 SFX OFF';
+      });
+
+      // Settings & Reset Save
+      document.getElementById('settingsDrawerBtn').addEventListener('click', () => {
+        document.getElementById('settingsHostName').textContent = gameState.hostName || 'Bastie';
+        document.getElementById('settingsCareerScore').textContent = gameState.careerScore.toLocaleString();
+        document.getElementById('settingsEatenCount').textContent = `${gameState.itemsEatenIds.length} / 300`;
+        document.getElementById('renameHostInput').value = gameState.hostName || 'Bastie';
+        document.getElementById('settingsModal').classList.remove('hidden');
+      });
+
+      document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+        document.getElementById('settingsModal').classList.add('hidden');
+      });
+
+      document.getElementById('updateHostNameBtn').addEventListener('click', () => {
+        const updated = document.getElementById('renameHostInput').value.trim() || 'Bastie';
+        gameState.hostName = updated;
+        gameState.hostLocked = true;
+        saveGameState();
+        document.getElementById('settingsHostName').textContent = updated;
+        showToast(`💾 Host name updated & saved: ${updated}`);
+      });
+
+      document.getElementById('resetSaveBtn').addEventListener('click', () => {
+        localStorage.removeItem(STORAGE_KEY);
+        gameState = defaultState();
+        saveGameState();
+        document.getElementById('settingsModal').classList.add('hidden');
+        document.getElementById('hostPromptModal').classList.remove('hidden');
+        showToast('Save cleared — enter your mukbang host name!');
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initThreeScene();
+      bindAllEvents();
+      renderMenuCategoryTabs();
+      renderMegaMenuList();
+      renderHud();
+      startLiveChatLoop();
+      initLoadingAndHostFlow();
+    });
+  </script>
+</body>
+</html>
